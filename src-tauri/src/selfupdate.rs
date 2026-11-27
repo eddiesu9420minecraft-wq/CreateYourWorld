@@ -188,7 +188,10 @@ pub async fn download(core: &SharedCore, app: &AppHandle) -> anyhow::Result<u64>
 pub fn staged(core: &SharedCore, app: &AppHandle, version: &str, file: PathBuf, kind: InstallKind) -> anyhow::Result<()> {
     let dir = core.paths.data.join("self-update").join(crate::util::sanitize_component(version));
     std::fs::create_dir_all(&dir)?;
-    let dst = dir.join(file.file_name().unwrap_or_default());
+    // Drop the download's ".part" suffix and product/version prefix: stage under the real asset name.
+    let name = file.file_name().unwrap_or_default().to_string_lossy().trim_end_matches(".part").to_string();
+    let prefix = format!("{}-{}-", PRODUCT_ID, crate::util::sanitize_component(version));
+    let dst = dir.join(name.strip_prefix(&prefix).unwrap_or(&name));
     if std::fs::rename(&file, &dst).is_err() {
         std::fs::copy(&file, &dst)?;
         let _ = std::fs::remove_file(&file);
@@ -378,10 +381,31 @@ fn apply(plan: &ApplyPlan) -> bool {
 fn relaunch(plan: &ApplyPlan) {
     #[cfg(target_os = "macos")]
     {
-        let _ = std::process::Command::new("open").arg(&plan.target).spawn();
+        let r = std::process::Command::new("open").arg(&plan.target).status();
+        log(plan, &format!("relaunch via open: {r:?}"));
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = std::process::Command::new(plan.target.join(&plan.exe_name)).spawn();
+        // The previous instance's WebView2 processes can linger for a moment after it exits;
+        // verify the relaunched app stays up and retry a few times if it does not.
+        let exe = plan.target.join(&plan.exe_name);
+        for attempt in 1..=5 {
+            match std::process::Command::new(&exe).current_dir(&plan.target).spawn() {
+                Ok(mut child) => {
+                    std::thread::sleep(std::time::Duration::from_secs(6));
+                    match child.try_wait() {
+                        Ok(None) => {
+                            log(plan, &format!("relaunched (attempt {attempt}), pid {} is running", child.id()));
+                            return;
+                        }
+                        Ok(Some(st)) => log(plan, &format!("relaunch attempt {attempt}: process exited early ({st})")),
+                        Err(e) => log(plan, &format!("relaunch attempt {attempt}: {e}")),
+                    }
+                }
+                Err(e) => log(plan, &format!("relaunch attempt {attempt}: spawn failed: {e}")),
+            }
+            std::thread::sleep(std::time::Duration::from_secs(3));
+        }
+        log(plan, "relaunch failed after 5 attempts; the updated app can be started normally");
     }
 }
