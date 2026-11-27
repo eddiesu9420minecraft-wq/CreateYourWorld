@@ -3,6 +3,10 @@ import { api, ACTIVE_STATES, CHANNEL_LABEL, errText, formatBytes, formatDate, ty
 import { useStore } from "../store";
 import { Icon } from "../components/Icon";
 import { Badge, Button, Empty, JobProgress, PageHeader, VerifyDetails } from "../components/ui";
+import { useNetworkStatusText } from "../components/SelfUpdateCard";
+import type { UpdateMode } from "../api";
+
+const MODE_LABEL: Record<UpdateMode, string> = { auto: "自動更新", notify: "僅通知", manual: "手動更新" };
 
 function JobRow({ job }: { job: JobInfo }) {
   const { run } = useStore();
@@ -131,6 +135,7 @@ export function RuntimePage() {
 export function SettingsPage() {
   const { settings, setSettings, products, info, run, refresh } = useStore();
   const [status, setStatus] = useState<ApiStatus | null>(null);
+  const net = useNetworkStatusText();
   useEffect(() => { api.githubStatus().then(setStatus).catch(() => {}); }, []);
   if (!settings) return null;
 
@@ -144,6 +149,22 @@ export function SettingsPage() {
   return (
     <div className="page">
       <PageHeader title="設定" />
+
+      <div className="section-title">自動更新</div>
+      <div className="card form">
+        <div className="form-row">
+          <div><b>Create Your World. 本身</b><div className="small muted">自動：下載並驗證後，在你結束 CYW 時安裝。也可以在「更新管理」立即更新並重新啟動。</div></div>
+          <select value={settings.selfUpdateMode} onChange={(e) => update({ selfUpdateMode: e.target.value as UpdateMode })}>
+            {(Object.keys(MODE_LABEL) as UpdateMode[]).map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
+          </select>
+        </div>
+        <div className="form-row">
+          <div><b>已安裝的應用程式</b><div className="small muted">啟動時檢查一次，之後每 60 分鐘檢查一次。正在執行的應用程式不會被關閉，會等你關閉後再更新。</div></div>
+          <select value={settings.appsUpdateMode} onChange={(e) => update({ appsUpdateMode: e.target.value as UpdateMode })}>
+            {(Object.keys(MODE_LABEL) as UpdateMode[]).map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
+          </select>
+        </div>
+      </div>
 
       <div className="section-title">更新頻道</div>
       <div className="card form">
@@ -180,6 +201,17 @@ export function SettingsPage() {
         <div className="form-row">
           <div><b>安裝完成後自動開啟</b></div>
           <input type="checkbox" className="switch" checked={settings.launchAfterInstall} onChange={(e) => update({ launchAfterInstall: e.target.checked })} />
+        </div>
+      </div>
+
+      <div className="section-title">Pikara Secure Network</div>
+      <div className="card form">
+        <div className="form-row">
+          <div>
+            <b>安全 DNS 解析</b>
+            <div className={`small ${net && !net.ok ? "danger" : "muted"}`}>{net ? net.text : "檢查中…"}</div>
+            <div className="small muted">更新與下載只透過 DNS over HTTPS（Cloudflare，備援 Google）解析，只使用 HTTPS 並嚴格驗證憑證，不使用也不修改系統 DNS 設定。</div>
+          </div>
         </div>
       </div>
 

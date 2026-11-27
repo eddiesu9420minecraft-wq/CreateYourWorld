@@ -6,6 +6,7 @@ import { ProductActions, ProductCard } from "../components/Product";
 import { Badge, Button, Empty, PageHeader, VerifyBadges, VerifyDetails, useConfirm } from "../components/ui";
 import type { Page } from "../App";
 import { useState } from "react";
+import { SelfUpdateCard } from "../components/SelfUpdateCard";
 
 function matches(p: ProductView, q: string) {
   if (!q) return true;
@@ -177,6 +178,8 @@ export function UpdatesPage({ onOpen }: { onOpen: (id: string) => void }) {
           {list.length > 1 && <Button kind="primary" onClick={updateAll}>全部更新</Button>}
         </>}
       />
+      <SelfUpdateCard />
+      <div className="section-title">應用程式</div>
       {list.length === 0 ? (
         <Empty icon="check" title="所有應用程式都是最新版本">更新依各產品在「設定」中選擇的頻道判斷。</Empty>
       ) : (
@@ -187,6 +190,7 @@ export function UpdatesPage({ onOpen }: { onOpen: (id: string) => void }) {
               <div className="grow">
                 <div><b>{p.name}</b> <span className="muted">{p.installed!.current} → </span><b className="gold">{p.update!.tag}</b></div>
                 <div className="small muted">{formatDate(p.update!.publishedAt)} · {p.update!.asset && formatBytes(p.update!.asset.size)} · {p.channel} 頻道</div>
+                {p.pendingUpdate && <div className="small gold">正在執行中，會在你關閉它之後自動更新（不會強制關閉）。</div>}
               </div>
               <Button kind="ghost" onClick={() => onOpen(p.id)}>更新說明</Button>
               <ProductActions p={p} />

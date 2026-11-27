@@ -2,6 +2,20 @@ use crate::github::Channel;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+/// How updates are handled (for CYW itself and for installed apps separately).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateMode {
+    /// Check, download, verify and install automatically (apps: once they are closed;
+    /// CYW: applied when CYW exits).
+    Auto,
+    /// Check automatically and notify; installing needs a click.
+    #[default]
+    Notify,
+    /// No automatic checks.
+    Manual,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
@@ -13,6 +27,8 @@ pub struct Settings {
     pub default_channel: Channel,
     /// Per-product channel override.
     pub channels: BTreeMap<String, Channel>,
+    pub self_update_mode: UpdateMode,
+    pub apps_update_mode: UpdateMode,
 }
 
 impl Default for Settings {
@@ -23,6 +39,8 @@ impl Default for Settings {
             launch_after_install: false,
             default_channel: Channel::Stable,
             channels: BTreeMap::new(),
+            self_update_mode: UpdateMode::Notify,
+            apps_update_mode: UpdateMode::Notify,
         }
     }
 }

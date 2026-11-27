@@ -8,6 +8,7 @@ export function statusBadge(p: ProductView) {
   if (p.status === "in-development") return <Badge tone="warn">開發中</Badge>;
   if (p.status === "no-platform-build") return <Badge>此平台尚無版本</Badge>;
   if (p.status === "offline") return <Badge tone="danger">無法取得版本</Badge>;
+  if (p.pendingUpdate) return <Badge tone="gold">關閉後更新</Badge>;
   if (p.update) return <Badge tone="gold">可更新</Badge>;
   if (p.installed) return <Badge tone="ok">已安裝</Badge>;
   return null;

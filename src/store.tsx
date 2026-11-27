@@ -77,7 +77,8 @@ export function StoreProvider({ children, onFirstLoad }: { children: ReactNode; 
 
   const install = useCallback(async (productId: string, name: string, tag?: string) => {
     const r = await run(() => api.install(productId, tag));
-    if (r?.switchedTo) toast("ok", `${name} 已切換至保留的 ${r.switchedTo}`);
+    if (r?.deferred) toast("info", `${name} 正在執行中：會在你關閉它之後自動更新，不會強制關閉。`);
+    else if (r?.switchedTo) toast("ok", `${name} 已切換至保留的 ${r.switchedTo}`);
     else if (r?.jobId != null) toast("info", `已加入下載佇列：${name}${tag ? ` ${tag}` : ""}`);
   }, [run, toast]);
 

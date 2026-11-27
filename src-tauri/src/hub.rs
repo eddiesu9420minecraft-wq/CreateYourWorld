@@ -10,6 +10,8 @@ use crate::runtime::HardwareReport;
 use crate::settings::Settings;
 use crate::util::save_json;
 use anyhow::{anyhow, bail};
+use pikara_secure::doh::DohResolver;
+use pikara_secure::net::{self, ClientOptions};
 use serde::Serialize;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
@@ -19,8 +21,15 @@ pub struct Core {
     pub paths: Paths,
     pub catalog: Vec<Product>,
     pub platform: Platform,
+    /// Download client (no overall timeout). DoH + HTTPS-only + allow-list.
     pub http: reqwest::Client,
+    /// Small-request client (20 s timeout). Same security properties.
+    pub api_http: reqwest::Client,
+    pub resolver: DohResolver,
     pub github: GithubClient,
+    pub selfupdate: crate::selfupdate::SelfUpdater,
+    /// Products whose update waits for the user to quit the running app.
+    pub pending_updates: Mutex<std::collections::BTreeSet<String>>,
     pub settings: RwLock<Settings>,
     pub installed: Mutex<InstalledDb>,
     pub jobs: DownloadManager,
@@ -31,17 +40,17 @@ pub type SharedCore = Arc<Core>;
 
 impl Core {
     pub fn new(paths: Paths) -> anyhow::Result<Self> {
-        let http = reqwest::Client::builder()
-            .user_agent(concat!("CreateYourWorld/", env!("CARGO_PKG_VERSION")))
-            .connect_timeout(Duration::from_secs(15))
-            .build()?;
-        let api_http = reqwest::Client::builder()
-            .user_agent(concat!("CreateYourWorld/", env!("CARGO_PKG_VERSION")))
-            .connect_timeout(Duration::from_secs(10))
-            .timeout(Duration::from_secs(20))
-            .build()?;
+        // Pikara Secure Network: DoH-only resolution, HTTPS-only, allow-listed GitHub hosts.
+        let resolver = DohResolver::default();
+        let ua = concat!("CreateYourWorld/", env!("CARGO_PKG_VERSION")).to_string();
+        let http = net::secure_client(resolver.clone(), ClientOptions { allowed_hosts: net::GITHUB_HOSTS, user_agent: ua.clone(), timeout: None })?;
+        let api_http = net::secure_client(resolver.clone(), ClientOptions { allowed_hosts: net::GITHUB_HOSTS, user_agent: ua, timeout: Some(Duration::from_secs(20)) })?;
         Ok(Self {
-            github: GithubClient::new(api_http, paths.cache.clone()),
+            github: GithubClient::new(api_http.clone(), paths.cache.clone()),
+            api_http,
+            resolver,
+            selfupdate: crate::selfupdate::SelfUpdater::new(),
+            pending_updates: Mutex::new(std::collections::BTreeSet::new()),
             jobs: DownloadManager::new(paths.jobs_file()),
             catalog: crate::catalog::load(),
             platform: Platform::detect(),
@@ -104,6 +113,9 @@ pub struct ProductView {
     pub fetched_at: Option<u64>,
     pub source: Option<&'static str>,
     pub signing: bool,
+    /// Update deferred until the app is closed.
+    pub pending_update: bool,
+    pub running: bool,
 }
 
 fn release_view(p: &Product, r: &GhRelease, plat: &Platform) -> ReleaseView {
@@ -147,6 +159,8 @@ pub async fn product_view(core: &SharedCore, p: &Product, force: bool) -> Produc
         fetched_at: None,
         source: None,
         signing: p.minisign_public_key.is_some(),
+        pending_update: core.pending_updates.lock().unwrap().contains(&p.id),
+        running: is_running(core, &p.id),
     };
     let Some(repo) = &p.repo else { return view };
 
@@ -213,6 +227,9 @@ pub fn launch_current(core: &Core, product_id: &str) -> anyhow::Result<()> {
 }
 
 pub fn uninstall(core: &Core, product_id: &str) -> anyhow::Result<()> {
+    if is_running(core, product_id) {
+        bail!("應用程式正在執行，請先關閉後再解除安裝");
+    }
     let mut db = core.installed.lock().unwrap();
     let app = db.apps.get(product_id).cloned().ok_or_else(|| anyhow!("尚未安裝"))?;
     for v in &app.versions {
@@ -274,6 +291,9 @@ pub fn prune_versions(app: &mut InstalledApp, keep_previous: usize) {
         }
     }
     for v in remove {
+        if crate::procs::running_under(&v.dir) {
+            continue; // still in use: keep it, prune on a later update
+        }
         if install::uninstall_dir(&v.dir, v.kind).is_ok() {
             app.versions.retain(|x| x.tag != v.tag);
         }
@@ -309,6 +329,11 @@ pub fn verify_installed(core: &Core) -> usize {
         let _ = core.save_installed(&snapshot);
     }
     broken
+}
+
+/// Is any installed version of this product currently running?
+pub fn is_running(core: &Core, product_id: &str) -> bool {
+    core.installed_app(product_id).is_some() && crate::procs::running_under(&install::product_dir(&core.paths.apps, product_id))
 }
 
 pub fn ensure_not_busy(core: &Core, product_id: &str) -> anyhow::Result<()> {

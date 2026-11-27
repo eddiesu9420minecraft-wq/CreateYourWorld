@@ -64,6 +64,11 @@ pub struct JobInfo {
     pub verification: Option<VerifyReport>,
     pub created_at: u64,
     pub finished_at: Option<u64>,
+    /// Self-update only: expected SHA-256 and minisign signature from the signed manifest.
+    #[serde(default)]
+    pub expected_sha256: Option<String>,
+    #[serde(default)]
+    pub signature: Option<String>,
 }
 
 struct Slot {
@@ -192,6 +197,7 @@ pub async fn enqueue(core: &SharedCore, app: &AppHandle, product_id: &str, tag: 
     if installed.as_ref().is_some_and(|a| a.versions.iter().any(|v| v.tag == release.tag_name)) {
         return Err(anyhow!("{} 已安裝；可在「已安裝」頁面切換", release.tag_name));
     }
+    pikara_secure::net::check_url(&asset.url, pikara_secure::net::GITHUB_HOSTS)?;
     let (sums_url, sig_url) = find_aux(&release, &asset.name);
     let id = core.jobs.next_id.fetch_add(1, Ordering::SeqCst);
     let info = JobInfo {
@@ -212,6 +218,8 @@ pub async fn enqueue(core: &SharedCore, app: &AppHandle, product_id: &str, tag: 
         verification: None,
         created_at: now_secs(),
         finished_at: None,
+        expected_sha256: None,
+        signature: None,
     };
     {
         let mut slots = core.jobs.slots.lock().unwrap();
@@ -270,6 +278,44 @@ pub fn cancel(core: &SharedCore, app: &AppHandle, id: u64) {
         }
         emit(app, &info);
     }
+}
+
+/// Queue a CYW self-update whose URL, SHA-256 and signature come from the verified manifest.
+pub fn enqueue_self_update(core: &SharedCore, app: &AppHandle, version: &str, entry: &pikara_secure::manifest::PlatformEntry, kind: crate::install::InstallKind) -> anyhow::Result<u64> {
+    use crate::selfupdate::PRODUCT_ID;
+    crate::hub::ensure_not_busy(core, PRODUCT_ID)?;
+    pikara_secure::net::check_url(&entry.url, pikara_secure::net::GITHUB_HOSTS)?;
+    let name = entry.url.rsplit('/').next().unwrap_or("cyw-update").to_string();
+    let id = core.jobs.next_id.fetch_add(1, Ordering::SeqCst);
+    let info = JobInfo {
+        id,
+        product_id: PRODUCT_ID.into(),
+        product_name: "Create Your World.".into(),
+        tag: version.trim_start_matches('v').to_string(),
+        purpose: "self-update".into(),
+        total: entry.size,
+        asset: SelectedAsset { name, size: entry.size, url: entry.url.clone(), digest: Some(format!("sha256:{}", entry.sha256)), kind, launch: None },
+        sums_url: None,
+        sig_url: None,
+        state: JobState::Queued,
+        downloaded: 0,
+        speed: 0,
+        resumed_from: 0,
+        error: None,
+        verification: None,
+        created_at: now_secs(),
+        finished_at: None,
+        expected_sha256: Some(entry.sha256.clone()),
+        signature: Some(entry.signature.clone()),
+    };
+    {
+        let mut slots = core.jobs.slots.lock().unwrap();
+        slots.push(Slot { info: info.clone(), ctrl: Arc::new(AtomicU8::new(RUN)), running: false });
+        core.jobs.persist_locked(&slots);
+    }
+    emit(app, &info);
+    pump(core, app);
+    Ok(id)
 }
 
 /// Start queued jobs while there is capacity.
@@ -350,6 +396,9 @@ async fn process(core: &SharedCore, app: &AppHandle, id: u64, ctrl: &Arc<AtomicU
 
     // ---- verification --------------------------------------------------------------
     set_state(core, app, id, JobState::Verifying);
+    if info.purpose == "self-update" {
+        return finish_self_update(core, app, &info, file).await;
+    }
     let product = core.product(&info.product_id)?.clone();
     let report = verify_download(core, &info, &product, &file).await?;
     core.jobs.with(id, true, |s| s.info.verification = Some(report.clone()));
@@ -405,6 +454,40 @@ async fn process(core: &SharedCore, app: &AppHandle, id: u64, ctrl: &Arc<AtomicU
     Ok(())
 }
 
+/// SHA-256 + minisign (compiled-in Pikara key) in one streaming pass; neither can be skipped.
+async fn finish_self_update(core: &SharedCore, app: &AppHandle, info: &JobInfo, file: PathBuf) -> Result<(), End> {
+    let (sha, sig) = match (&info.expected_sha256, &info.signature) {
+        (Some(a), Some(b)) => (a.clone(), b.clone()),
+        _ => {
+            let _ = std::fs::remove_file(&file);
+            return Err(End::Failed("缺少 SHA-256 或簽章，拒絕安裝".into()));
+        }
+    };
+    let f = file.clone();
+    let res = tokio::task::spawn_blocking(move || pikara_secure::artifact::verify_file(&f, &sha, &sig, pikara_secure::keys::PIKARA_RELEASE_PUBKEY))
+        .await
+        .map_err(|e| End::Failed(e.to_string()))?;
+    match res {
+        Ok(actual) => {
+            let report = VerifyReport {
+                sha256: actual,
+                github_digest: Check::new(CheckStatus::Passed, "與已簽章 update.json 中的 SHA-256 相符"),
+                checksum_file: Check::new(CheckStatus::NotAvailable, "自身更新以已簽章的 update.json 為準"),
+                signature: Check::new(CheckStatus::Passed, "Pikara 發布簽章有效（內建公鑰）"),
+            };
+            core.jobs.with(info.id, true, |s| s.info.verification = Some(report));
+            crate::selfupdate::staged(core, app, &info.tag, file, info.asset.kind).map_err(|e| End::Failed(e.to_string()))?;
+            Ok(())
+        }
+        Err(e) => {
+            let _ = std::fs::remove_file(&file);
+            let msg = format!("安全驗證失敗，已刪除下載的檔案且不會安裝：{e}");
+            crate::selfupdate::failed(core, app, msg.clone(), true);
+            Err(End::Failed(msg))
+        }
+    }
+}
+
 async fn fetch_text(core: &SharedCore, url: &str) -> anyhow::Result<String> {
     let resp = core.http.get(url).timeout(Duration::from_secs(30)).send().await?;
     if !resp.status().is_success() {
@@ -431,8 +514,8 @@ async fn verify_download(core: &SharedCore, info: &JobInfo, product: &crate::cat
         (Some(_), None) => Check::new(CheckStatus::Failed, "產品要求簽章，但此版本缺少 .sig 檔"),
         (Some(key), Some(url)) => match fetch_text(core, url).await {
             Ok(sig) => {
-                let (key, f) = (key.clone(), file.clone());
-                match tokio::task::spawn_blocking(move || verify::verify_minisign(&key, &sig, &f)).await {
+                let (key, f, sha2) = (key.clone(), file.clone(), sha.clone());
+                match tokio::task::spawn_blocking(move || verify::verify_minisign(&key, &sig, &f, &sha2)).await {
                     Ok(Ok(())) => Check::new(CheckStatus::Passed, "minisign 簽章有效"),
                     Ok(Err(e)) => Check::new(CheckStatus::Failed, format!("簽章無效：{e}")),
                     Err(e) => Check::new(CheckStatus::Failed, e.to_string()),

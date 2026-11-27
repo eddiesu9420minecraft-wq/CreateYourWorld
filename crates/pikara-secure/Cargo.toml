@@ -1,0 +1,21 @@
+[package]
+name = "pikara-secure"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Pikara Secure Network: DNS-over-HTTPS resolution, locked-down HTTPS client and signed-update verification shared by all Pikara apps."
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json", "http2"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+minisign-verify = "0.2.5"
+base64 = "0.22"
+semver = "1"
+tokio = { version = "1", features = ["sync", "time", "macros", "rt-multi-thread"] }
+futures-util = "0.3"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

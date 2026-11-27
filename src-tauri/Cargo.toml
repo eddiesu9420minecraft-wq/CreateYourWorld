@@ -1,6 +1,6 @@
 [package]
 name = "create-your-world"
-version = "0.1.0"
+version = "0.1.0-alpha"
 description = "Create Your World. — Pikara software hub. Free Forever."
 authors = ["pikara"]
 license = "MIT"
@@ -32,6 +32,8 @@ tar = "0.4"
 minisign-verify = "0.2"
 base64 = "0.22"
 anyhow = "1"
+pikara-secure = { path = "../crates/pikara-secure" }
+sysinfo = { version = "0.37", default-features = false, features = ["system"] }
 
 [profile.release]
 codegen-units = 1

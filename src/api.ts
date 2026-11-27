@@ -30,6 +30,7 @@ export interface ProductView {
   status: ProductStatus; channel: Channel; releases: ReleaseView[]; latest: ReleaseView | null;
   installed: InstalledApp | null; update: ReleaseView | null; warning: string | null;
   fetchedAt: number | null; source: string | null; signing: boolean;
+  pendingUpdate: boolean; running: boolean;
 }
 
 export type JobState = "queued" | "downloading" | "paused" | "verifying" | "installing" | "completed" | "failed" | "canceled";
@@ -41,12 +42,24 @@ export interface JobInfo {
   verification: VerifyReport | null; createdAt: number; finishedAt: number | null;
 }
 
-export interface InstallOutcome { jobId: number | null; switchedTo: string | null }
+export interface InstallOutcome { jobId: number | null; switchedTo: string | null; deferred: boolean }
+
+export type UpdateMode = "auto" | "notify" | "manual";
 
 export interface Settings {
   maxConcurrentDownloads: number; keepPreviousVersions: number; launchAfterInstall: boolean;
   defaultChannel: Channel; channels: Record<string, Channel>;
+  selfUpdateMode: UpdateMode; appsUpdateMode: UpdateMode;
 }
+
+export interface SelfUpdateStatus {
+  current: string;
+  state: "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready" | "error" | "unsupported";
+  latest: string | null; notes: string | null; error: string | null; securityAlert: boolean;
+  checkedAt: number | null; jobId: number | null; unsupportedReason: string | null;
+}
+
+export interface NetworkStatus { ok: boolean; provider: string | null; addresses: string[]; error: string | null }
 
 export interface Platform { os: string; arch: string; buildArch: string; rosetta: boolean }
 export interface AppInfo {
@@ -84,6 +97,12 @@ export const api = {
   githubStatus: () => invoke<ApiStatus>("github_status"),
   clearApiCache: () => invoke<void>("clear_api_cache"),
   hardware: () => invoke<HardwareReport>("detect_hardware"),
+  selfUpdateStatus: () => invoke<SelfUpdateStatus>("self_update_status"),
+  checkSelfUpdate: () => invoke<SelfUpdateStatus>("check_self_update"),
+  downloadSelfUpdate: () => invoke<number>("download_self_update"),
+  applySelfUpdate: () => invoke<void>("apply_self_update"),
+  networkStatus: () => invoke<NetworkStatus>("network_status"),
+  onSelfUpdate: (cb: (s: SelfUpdateStatus) => void): Promise<UnlistenFn> => listen<SelfUpdateStatus>("selfupdate://status", (e) => cb(e.payload)),
   onJob: (cb: (j: JobInfo) => void): Promise<UnlistenFn> => listen<JobInfo>("downloads://job", (e) => cb(e.payload)),
   onAppsChanged: (cb: () => void): Promise<UnlistenFn> => listen("apps://changed", () => cb()),
 };

@@ -1,9 +1,6 @@
 //! Integrity (SHA-256) and authenticity (minisign signature) checks.
 
-use base64::Engine;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-use std::io::Read;
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -49,17 +46,7 @@ impl VerifyReport {
 }
 
 pub fn sha256_file(path: &Path) -> std::io::Result<String> {
-    let mut f = std::fs::File::open(path)?;
-    let mut h = Sha256::new();
-    let mut buf = vec![0u8; 1 << 20];
-    loop {
-        let n = f.read(&mut buf)?;
-        if n == 0 {
-            break;
-        }
-        h.update(&buf[..n]);
-    }
-    Ok(hex::encode(h.finalize()))
+    pikara_secure::artifact::sha256_file(path).map_err(|e| std::io::Error::other(e.to_string()))
 }
 
 /// Compare against GitHub's `digest` field (`sha256:<hex>`).
@@ -94,31 +81,9 @@ pub fn check_sums_file(actual: &str, sums: Option<&str>, file_name: &str) -> Che
     }
 }
 
-/// Minisign keys and signatures may be raw text or base64 of the text (Tauri updater format).
-fn maybe_b64_text(s: &str) -> String {
-    let t = s.trim();
-    if t.starts_with("untrusted comment:") {
-        return t.to_string();
-    }
-    match base64::engine::general_purpose::STANDARD.decode(t) {
-        Ok(bytes) => match String::from_utf8(bytes) {
-            Ok(text) if text.starts_with("untrusted comment:") => text,
-            _ => t.to_string(),
-        },
-        Err(_) => t.to_string(),
-    }
-}
-
-pub fn verify_minisign(public_key: &str, signature: &str, file: &Path) -> anyhow::Result<()> {
-    let key_text = maybe_b64_text(public_key);
-    let pk = if key_text.starts_with("untrusted comment:") {
-        minisign_verify::PublicKey::decode(&key_text)?
-    } else {
-        minisign_verify::PublicKey::from_base64(&key_text)?
-    };
-    let sig = minisign_verify::Signature::decode(&maybe_b64_text(signature))?;
-    let data = std::fs::read(file)?;
-    pk.verify(&data, &sig, false)?;
+/// Streaming SHA-256 + minisign check via Pikara Secure Network (file never loaded into RAM).
+pub fn verify_minisign(public_key: &str, signature: &str, file: &Path, expected_sha256: &str) -> anyhow::Result<()> {
+    pikara_secure::artifact::verify_file(file, expected_sha256, signature, public_key)?;
     Ok(())
 }
 

@@ -6,7 +6,9 @@ mod github;
 mod install;
 mod paths;
 mod platform;
+mod procs;
 mod runtime;
+mod selfupdate;
 mod settings;
 pub mod splash;
 mod util;
@@ -15,15 +17,28 @@ mod verify;
 use crate::hub::{Core, ProductView, SharedCore};
 use crate::downloads::JobInfo;
 use crate::github::{Channel, RateInfo};
-use crate::settings::Settings;
+use crate::settings::{Settings, UpdateMode};
 use crate::splash::{SplashController, SplashSnapshot};
 use serde::Serialize;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 use tauri_plugin_opener::OpenerExt;
 
 type Res<T> = Result<T, String>;
+
+/// Non-GUI entry points. Returns an exit code when the process should not start the GUI.
+pub fn cli_entry() -> Option<i32> {
+    let args: Vec<String> = std::env::args().collect();
+    match args.get(1).map(String::as_str) {
+        Some("--pikara-version") => {
+            println!("{}", selfupdate::VERSION);
+            Some(0)
+        }
+        Some("--pikara-apply-update") => Some(args.get(2).map(|p| selfupdate::run_helper(std::path::Path::new(p))).unwrap_or(2)),
+        _ => None,
+    }
+}
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -57,6 +72,9 @@ async fn initialize(app: AppHandle, core: SharedCore) {
     let _ = tokio::time::timeout(Duration::from_secs(12), hub::product_views(&core, false)).await;
 
     splash.backend_done(&app);
+
+    // Update checks run in the background after startup; they never block the splash.
+    tauri::async_runtime::spawn(scheduler(app.clone(), core.clone()));
 
     // Safety net: never leave the user staring at the splash if the main page fails to report.
     let h = app.clone();
@@ -119,16 +137,22 @@ async fn get_products(core: State<'_, SharedCore>, force: bool) -> Res<Vec<Produ
 
 #[tauri::command]
 async fn install_app(app: AppHandle, core: State<'_, SharedCore>, product_id: String, tag: Option<String>) -> Res<InstallOutcome> {
+    // Never touch a running app: remember the request and update after the user quits it.
+    if core.installed_app(&product_id).is_some() && hub::is_running(&core, &product_id) {
+        core.pending_updates.lock().unwrap().insert(product_id.clone());
+        core.notify_apps_changed(&app);
+        return Ok(InstallOutcome { job_id: None, switched_to: None, deferred: true });
+    }
     // A version kept on disk (e.g. after a rollback) is switched to instead of downloaded again.
     if let Some(t) = &tag {
         hub::ensure_not_busy(&core, &product_id).map_err(err)?;
         if hub::switch_to(&core, &product_id, t).map_err(err)? {
             core.notify_apps_changed(&app);
-            return Ok(InstallOutcome { job_id: None, switched_to: Some(t.clone()) });
+            return Ok(InstallOutcome { job_id: None, switched_to: Some(t.clone()), deferred: false });
         }
     }
     let id = downloads::enqueue(&core, &app, &product_id, tag).await.map_err(err)?;
-    Ok(InstallOutcome { job_id: Some(id), switched_to: None })
+    Ok(InstallOutcome { job_id: Some(id), switched_to: None, deferred: false })
 }
 
 #[derive(Serialize)]
@@ -136,6 +160,7 @@ async fn install_app(app: AppHandle, core: State<'_, SharedCore>, product_id: St
 struct InstallOutcome {
     job_id: Option<u64>,
     switched_to: Option<String>,
+    deferred: bool,
 }
 
 #[tauri::command]
@@ -257,6 +282,110 @@ async fn detect_hardware(core: State<'_, SharedCore>) -> Res<runtime::HardwareRe
     Ok(r.clone())
 }
 
+// ---------------------------------------------------------------- updates ----
+
+/// Startup check, then a full check every 60 minutes; deferred app updates are retried every
+/// minute once the app has been closed.
+async fn scheduler(app: AppHandle, core: SharedCore) {
+    tokio::time::sleep(Duration::from_secs(3)).await;
+    let mut last_full: Option<std::time::Instant> = None;
+    loop {
+        if last_full.is_none_or(|t| t.elapsed() >= Duration::from_secs(60 * 60)) {
+            update_cycle(&app, &core).await;
+            last_full = Some(std::time::Instant::now());
+        }
+        process_pending(&app, &core).await;
+        tokio::time::sleep(Duration::from_secs(60)).await;
+    }
+}
+
+async fn update_cycle(app: &AppHandle, core: &SharedCore) {
+    let (self_mode, apps_mode) = {
+        let s = core.settings.read().unwrap();
+        (s.self_update_mode, s.apps_update_mode)
+    };
+    if self_mode != UpdateMode::Manual {
+        selfupdate::check(core, app, self_mode).await;
+    }
+    if apps_mode != UpdateMode::Manual {
+        let views = hub::product_views(core, true).await;
+        let available: Vec<_> = views.iter().filter(|v| v.update.is_some()).collect();
+        if apps_mode == UpdateMode::Auto {
+            for v in &available {
+                request_app_update(app, core, &v.id).await;
+            }
+        }
+        let _ = app.emit("updates://checked", available.len());
+        core.notify_apps_changed(app);
+    }
+}
+
+async fn request_app_update(app: &AppHandle, core: &SharedCore, product_id: &str) {
+    if hub::is_running(core, product_id) {
+        core.pending_updates.lock().unwrap().insert(product_id.to_string());
+        return;
+    }
+    if !core.jobs.has_active(product_id) {
+        let _ = downloads::enqueue(core, app, product_id, None).await;
+    }
+}
+
+async fn process_pending(app: &AppHandle, core: &SharedCore) {
+    let pending: Vec<String> = core.pending_updates.lock().unwrap().iter().cloned().collect();
+    for id in pending {
+        if !hub::is_running(core, &id) {
+            core.pending_updates.lock().unwrap().remove(&id);
+            if !core.jobs.has_active(&id) {
+                let _ = downloads::enqueue(core, app, &id, None).await;
+            }
+            core.notify_apps_changed(app);
+        }
+    }
+}
+
+#[tauri::command]
+fn self_update_status(core: State<'_, SharedCore>) -> selfupdate::SelfUpdateStatus {
+    core.selfupdate.status()
+}
+
+#[tauri::command]
+async fn check_self_update(app: AppHandle, core: State<'_, SharedCore>) -> Res<selfupdate::SelfUpdateStatus> {
+    // A manual check never auto-installs; it only reports.
+    selfupdate::check(&core, &app, UpdateMode::Notify).await;
+    Ok(core.selfupdate.status())
+}
+
+#[tauri::command]
+async fn download_self_update(app: AppHandle, core: State<'_, SharedCore>) -> Res<u64> {
+    selfupdate::download(&core, &app).await.map_err(err)
+}
+
+/// Apply the verified update now and restart CYW.
+#[tauri::command]
+fn apply_self_update(app: AppHandle, core: State<'_, SharedCore>) -> Res<()> {
+    selfupdate::spawn_apply(&core, true).map_err(err)?;
+    app.exit(0);
+    Ok(())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NetworkStatus {
+    ok: bool,
+    provider: Option<String>,
+    addresses: Vec<String>,
+    error: Option<String>,
+}
+
+/// Resolve api.github.com through Pikara Secure Network (DoH) and report which provider answered.
+#[tauri::command]
+async fn network_status(core: State<'_, SharedCore>) -> Res<NetworkStatus> {
+    Ok(match core.resolver.lookup("api.github.com").await {
+        Ok(l) => NetworkStatus { ok: true, provider: Some(l.provider.to_string()), addresses: l.addrs.iter().map(|a| a.to_string()).collect(), error: None },
+        Err(e) => NetworkStatus { ok: false, provider: None, addresses: vec![], error: Some(e.to_string()) },
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -307,7 +436,23 @@ pub fn run() {
             github_status,
             clear_api_cache,
             detect_hardware,
+            self_update_status,
+            check_self_update,
+            download_self_update,
+            apply_self_update,
+            network_status,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Create Your World");
+        .build(tauri::generate_context!())
+        .expect("error while building Create Your World")
+        .run(|app, event| {
+            // Auto mode: a verified, staged CYW update is applied when the user quits.
+            if let RunEvent::Exit = event {
+                if let Some(core) = app.try_state::<SharedCore>() {
+                    let auto = core.settings.read().unwrap().self_update_mode == UpdateMode::Auto;
+                    if auto && core.selfupdate.staged().is_some() {
+                        let _ = selfupdate::spawn_apply(&core, false);
+                    }
+                }
+            }
+        });
 }
