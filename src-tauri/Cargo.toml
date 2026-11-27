@@ -1,6 +1,6 @@
 [package]
 name = "create-your-world"
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 description = "Create Your World. — Pikara software hub. Free Forever."
 authors = ["pikara"]
 license = "MIT"

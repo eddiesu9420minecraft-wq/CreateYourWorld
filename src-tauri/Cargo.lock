@@ -626,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "create-your-world"
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
