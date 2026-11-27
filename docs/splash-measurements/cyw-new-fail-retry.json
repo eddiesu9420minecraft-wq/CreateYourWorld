@@ -1,0 +1,275 @@
+{
+  "regression": {
+    "respondingSamples": 14,
+    "notRespondingSamples": 0,
+    "ipcProbes": 19,
+    "ipcMaxRoundTripMs": 8,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "cyw-new-fail-retry",
+  "exe": "D:/t/bin/cyw-new.exe",
+  "scenario": "fail-retry",
+  "env": {
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/cd/new-wv",
+    "PIKARA_SPLASH_TEST_FAIL": "paths"
+  },
+  "pid": 45180,
+  "processCreatedUnixMs": 1795774887176,
+  "harnessLaunchToProcessMs": 108,
+  "sinceProcessStart": {
+    "splash page attached": 1743,
+    "splash visible": 1744,
+    "main page attached": 1889,
+    "failure shown": 1891,
+    "main visible": 3182,
+    "main ready on screen": 3182,
+    "retry clicked": 7914,
+    "splash exit started": 8009,
+    "splash window closed": 9207
+  },
+  "backend": {
+    "testHooks": "PIKARA_SPLASH_TEST_FAIL=paths",
+    "version": "0.1.0-alpha",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "paths",
+        "state": "done",
+        "ms": 1,
+        "detail": null
+      },
+      {
+        "id": "settings",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "installed",
+        "state": "done",
+        "ms": 2,
+        "detail": "1 個"
+      },
+      {
+        "id": "jobs",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "releases",
+        "state": "done",
+        "ms": 33,
+        "detail": null
+      }
+    ],
+    "pluginStartSinceProcessMs": 84,
+    "timings": {
+      "startedUnixMs": 1795774887260,
+      "shownMs": 1730,
+      "backendDoneMs": 7872,
+      "frontendReadyMs": 7914,
+      "completeMs": 7914,
+      "revealedMs": 7915
+    },
+    "sinceProcessStart": {
+      "shownMs": 1814,
+      "backendDoneMs": 7956,
+      "frontendReadyMs": 7998,
+      "completeMs": 7998,
+      "revealedMs": 7999
+    }
+  },
+  "log": [
+    {
+      "at": -108,
+      "msg": "launch (direct spawn)"
+    },
+    {
+      "at": 1743,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 1744,
+      "msg": "splash",
+      "vis": "visible",
+      "mounted": false
+    },
+    {
+      "at": 1744,
+      "msg": "splash visible"
+    },
+    {
+      "at": 1811,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": 1889,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 1890,
+      "msg": "無法建立資料目錄",
+      "vis": "visible",
+      "mounted": true,
+      "count": "1/5",
+      "segs": "failed,pending,pending,pending,pending",
+      "failed": true,
+      "failTitle": "無法建立資料目錄",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "open_data",
+        "continue",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 1891,
+      "msg": "failure shown",
+      "title": "無法建立資料目錄",
+      "actions": [
+        "open_data",
+        "continue",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 3128,
+      "msg": "screenshot",
+      "file": "cyw-new-fail-retry-splash.png"
+    },
+    {
+      "at": 3154,
+      "msg": "screenshot",
+      "file": "cyw-new-fail-retry-failure.png"
+    },
+    {
+      "at": 3181,
+      "msg": "screenshot",
+      "file": "cyw-new-fail-retry-splash-later.png"
+    },
+    {
+      "at": 3182,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 3182,
+      "msg": "main visible"
+    },
+    {
+      "at": 3182,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 7914,
+      "msg": "retry clicked"
+    },
+    {
+      "at": 7946,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": "無法建立資料目錄",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "open_data",
+        "continue",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 7977,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": "無法建立資料目錄",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "open_data",
+        "continue",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 8009,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": "無法建立資料目錄",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "open_data",
+        "continue",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 8009,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 9207,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 9207,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 9776,
+      "msg": "screenshot",
+      "file": "cyw-new-fail-retry-main.png"
+    }
+  ]
+}

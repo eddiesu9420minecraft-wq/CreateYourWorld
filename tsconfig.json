@@ -14,7 +14,8 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": { "@pikara/splash": ["./crates/pikara-splash/web/src/react.tsx"] }
   },
   "include": ["src"]
 }

@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { ACTIVE_STATES, ARCH_LABEL, OS_LABEL } from "./api";
-import { PikaraLogo, RevealOverlay, splashBridge } from "./pikara-splash";
+import { PikaraLogo, RevealOverlay } from "@pikara/splash";
+import { MAIN_BACKGROUND, splashBridge, transport } from "./splash";
 import { StoreProvider, useStore } from "./store";
 import { Icon } from "./components/Icon";
 import { ProductDetail } from "./components/Product";
@@ -104,7 +105,7 @@ export function App() {
   return (
     <StoreProvider onFirstLoad={onFirstLoad}>
       <Shell />
-      <RevealOverlay />
+      <RevealOverlay transport={transport} background={MAIN_BACKGROUND} />
     </StoreProvider>
   );
 }

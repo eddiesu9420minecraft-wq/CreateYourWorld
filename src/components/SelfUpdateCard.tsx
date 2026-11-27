@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, errText, formatDate, type SelfUpdateStatus } from "../api";
-import { PikaraLogo } from "../pikara-splash";
+import { PikaraLogo } from "@pikara/splash";
 import { useStore } from "../store";
 import { Badge, Button, JobProgress } from "./ui";
 

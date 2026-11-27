@@ -1,0 +1,114 @@
+{
+  "regression": {
+    "respondingSamples": 5,
+    "notRespondingSamples": 0,
+    "ipcProbes": 3,
+    "ipcMaxRoundTripMs": 3000,
+    "ipcOver1s": 3,
+    "pass": false
+  },
+  "name": "cyw-base-cold-1",
+  "exe": "D:/t/bin/cyw-base.exe",
+  "scenario": "normal",
+  "env": {
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/cd/base-wv"
+  },
+  "pid": 6092,
+  "processCreatedUnixMs": 1795774793152,
+  "harnessLaunchToProcessMs": 2,
+  "sinceProcessStart": {
+    "splash page attached": 630,
+    "splash visible": 669,
+    "main page attached": 760,
+    "main visible": 823,
+    "main ready on screen": 823,
+    "splash exit started": 1236,
+    "splash window closed": 2007
+  },
+  "backend": {
+    "error": "Command plugin:pikara-splash|status not allowed by ACL"
+  },
+  "log": [
+    {
+      "at": -2,
+      "msg": "launch (direct spawn)"
+    },
+    {
+      "at": 630,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 669,
+      "msg": "splash",
+      "vis": "visible",
+      "mounted": true,
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "actions": []
+    },
+    {
+      "at": 669,
+      "msg": "splash visible"
+    },
+    {
+      "at": 760,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 822,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 823,
+      "msg": "main visible"
+    },
+    {
+      "at": 823,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 1236,
+      "msg": "splash",
+      "vis": "visible",
+      "mounted": true,
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "actions": []
+    },
+    {
+      "at": 1236,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 2007,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 2234,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 2760,
+      "msg": "screenshot",
+      "file": "cyw-base-cold-1-main.png"
+    }
+  ]
+}

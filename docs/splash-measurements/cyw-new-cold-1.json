@@ -1,0 +1,233 @@
+{
+  "regression": {
+    "respondingSamples": 4,
+    "notRespondingSamples": 0,
+    "ipcProbes": 2,
+    "ipcMaxRoundTripMs": 2,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "cyw-new-cold-1",
+  "exe": "D:/t/bin/cyw-new.exe",
+  "scenario": "normal",
+  "env": {
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/cd/new-wv"
+  },
+  "pid": 16872,
+  "processCreatedUnixMs": 1795774802240,
+  "harnessLaunchToProcessMs": 4,
+  "sinceProcessStart": {
+    "splash page attached": 638,
+    "splash visible": 642,
+    "main page attached": 705,
+    "main visible": 712,
+    "main ready on screen": 886,
+    "splash exit started": 968,
+    "splash window closed": 2155
+  },
+  "backend": {
+    "testHooks": null,
+    "version": "0.1.0-alpha",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "paths",
+        "state": "done",
+        "ms": 1,
+        "detail": null
+      },
+      {
+        "id": "settings",
+        "state": "done",
+        "ms": 3,
+        "detail": null
+      },
+      {
+        "id": "installed",
+        "state": "done",
+        "ms": 2,
+        "detail": "1 個"
+      },
+      {
+        "id": "jobs",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "releases",
+        "state": "done",
+        "ms": 41,
+        "detail": null
+      }
+    ],
+    "pluginStartSinceProcessMs": 64,
+    "timings": {
+      "startedUnixMs": 1795774802304,
+      "shownMs": 577,
+      "backendDoneMs": 648,
+      "frontendReadyMs": 881,
+      "completeMs": 881,
+      "revealedMs": 882
+    },
+    "sinceProcessStart": {
+      "shownMs": 641,
+      "backendDoneMs": 712,
+      "frontendReadyMs": 945,
+      "completeMs": 945,
+      "revealedMs": 946
+    }
+  },
+  "log": [
+    {
+      "at": -4,
+      "msg": "launch (direct spawn)"
+    },
+    {
+      "at": 638,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 642,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": 642,
+      "msg": "splash visible"
+    },
+    {
+      "at": 676,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "0/5",
+      "segs": "pending,pending,pending,pending,pending",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 705,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 709,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 712,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": false
+    },
+    {
+      "at": 712,
+      "msg": "main visible"
+    },
+    {
+      "at": 734,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 886,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 886,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 968,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 968,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 1572,
+      "msg": "screenshot",
+      "file": "cyw-new-cold-1-splash.png"
+    },
+    {
+      "at": 1720,
+      "msg": "screenshot",
+      "file": "cyw-new-cold-1-splash-later.png"
+    },
+    {
+      "at": 2155,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 2155,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 2705,
+      "msg": "screenshot",
+      "file": "cyw-new-cold-1-main.png"
+    }
+  ]
+}

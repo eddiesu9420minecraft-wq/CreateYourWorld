@@ -1,0 +1,301 @@
+{
+  "regression": {
+    "respondingSamples": 22,
+    "notRespondingSamples": 0,
+    "ipcProbes": 34,
+    "ipcMaxRoundTripMs": 57,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "cyw-new-slow",
+  "exe": "D:/t/bin/cyw-new.exe",
+  "scenario": "slow",
+  "env": {
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/cd/new-wv",
+    "PIKARA_SPLASH_TEST_DELAY": "releases:9000"
+  },
+  "pid": 43180,
+  "processCreatedUnixMs": 1795774931513,
+  "harnessLaunchToProcessMs": 5,
+  "sinceProcessStart": {
+    "splash page attached": 607,
+    "splash visible": 655,
+    "main page attached": 792,
+    "main visible": 811,
+    "main ready on screen": 811,
+    "slow notice shown": 6216,
+    "splash exit started": 9778,
+    "splash window closed": 10950
+  },
+  "backend": {
+    "testHooks": "PIKARA_SPLASH_TEST_DELAY=releases:9000",
+    "version": "0.1.0-alpha",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "paths",
+        "state": "done",
+        "ms": 1,
+        "detail": null
+      },
+      {
+        "id": "settings",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "installed",
+        "state": "done",
+        "ms": 1,
+        "detail": "1 個"
+      },
+      {
+        "id": "jobs",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "releases",
+        "state": "done",
+        "ms": 9027,
+        "detail": null
+      }
+    ],
+    "pluginStartSinceProcessMs": 38,
+    "timings": {
+      "startedUnixMs": 1795774931551,
+      "shownMs": 643,
+      "backendDoneMs": 9666,
+      "frontendReadyMs": 9708,
+      "completeMs": 9708,
+      "revealedMs": 9709
+    },
+    "sinceProcessStart": {
+      "shownMs": 681,
+      "backendDoneMs": 9704,
+      "frontendReadyMs": 9746,
+      "completeMs": 9746,
+      "revealedMs": 9747
+    }
+  },
+  "log": [
+    {
+      "at": -5,
+      "msg": "launch (direct spawn)"
+    },
+    {
+      "at": 607,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 655,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": 655,
+      "msg": "splash visible"
+    },
+    {
+      "at": 792,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 793,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 811,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 811,
+      "msg": "main visible"
+    },
+    {
+      "at": 811,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 922,
+      "msg": "screenshot",
+      "file": "cyw-new-slow-splash.png"
+    },
+    {
+      "at": 1793,
+      "msg": "screenshot",
+      "file": "cyw-new-slow-splash-later.png"
+    },
+    {
+      "at": 6216,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 6 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 6216,
+      "msg": "slow notice shown",
+      "text": "這一步已經花了 6 秒，比平常久。",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 6340,
+      "msg": "screenshot",
+      "file": "cyw-new-slow-slow.png"
+    },
+    {
+      "at": 7616,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 7 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 8627,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 8 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9623,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 9 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9716,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9778,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9778,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 10950,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 10951,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 11528,
+      "msg": "screenshot",
+      "file": "cyw-new-slow-main.png"
+    }
+  ]
+}

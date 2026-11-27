@@ -40,7 +40,7 @@ npm run tauri build
 | `runtime.rs` | CUDA / AMD / Metal / CPU 後端偵測 |
 | `crates/pikara-secure` | **Pikara Secure Network**，所有 Pikara 軟體共用：DoH 解析、HTTPS 限定的用戶端、已簽章 update.json 的驗證、串流計算 SHA-256 與 minisign 驗證、內建的信任公鑰 |
 | `selfupdate.rs` | CYW 自身更新：已簽章的 update.json → 透過下載佇列下載 → 驗證 → 由輔助程序先備份、安裝、檢查新版本號，失敗時自動還原 |
-| `splash.rs` + `src/pikara-splash/` | 可重用啟動畫面，見該資料夾 README |
+| `crates/pikara-splash` | **Pikara 統一啟動畫面**（Tauri 外掛＋不依賴框架的前端），所有 Pikara 軟體共用的單一來源；其他 repo 以 `sync.mjs` vendored。見該資料夾 README |
 
 ### 更新頻道
 

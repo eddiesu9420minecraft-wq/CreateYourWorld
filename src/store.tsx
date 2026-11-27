@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { splashBridge } from "./pikara-splash";
+import { splashBridge } from "./splash";
 import { api, errText, ACTIVE_STATES, type AppInfo, type JobInfo, type ProductView, type Settings } from "./api";
 
 interface Toast { id: number; kind: "error" | "info" | "ok"; text: string }

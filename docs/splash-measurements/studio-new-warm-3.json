@@ -1,0 +1,221 @@
+{
+  "regression": {
+    "respondingSamples": 9,
+    "notRespondingSamples": 0,
+    "ipcProbes": 1,
+    "ipcMaxRoundTripMs": 78,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "studio-new-warm-3",
+  "exe": "D:/t/bin/studio-new.exe",
+  "scenario": "normal",
+  "env": {
+    "PIKARA_STUDIO_DATA": "D:/t/sd/new",
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/sd/new/EBWebView"
+  },
+  "pid": 44984,
+  "processCreatedUnixMs": 1795775293506,
+  "harnessLaunchToProcessMs": 755,
+  "sinceProcessStart": {
+    "splash page attached": 909,
+    "splash visible": 913,
+    "main page attached": 1077,
+    "main visible": 1090,
+    "splash exit started": 1179,
+    "main ready on screen": 1228,
+    "splash window closed": 2359
+  },
+  "backend": {
+    "testHooks": null,
+    "version": "0.3.1",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "db",
+        "state": "done",
+        "ms": 1,
+        "detail": "結構版本 v3"
+      },
+      {
+        "id": "recover",
+        "state": "done",
+        "ms": 4,
+        "detail": "已恢復 1 個中斷的工作"
+      },
+      {
+        "id": "services",
+        "state": "done",
+        "ms": 37,
+        "detail": "佇列與自動製作已啟動"
+      },
+      {
+        "id": "projects",
+        "state": "done",
+        "ms": 0,
+        "detail": "0 個專案"
+      },
+      {
+        "id": "env",
+        "state": "done",
+        "ms": 145,
+        "detail": "ffmpeg・ffprobe・git"
+      }
+    ],
+    "pluginStartSinceProcessMs": 383,
+    "timings": {
+      "startedUnixMs": 1795775293889,
+      "shownMs": 555,
+      "backendDoneMs": 745,
+      "frontendReadyMs": 785,
+      "completeMs": 785,
+      "revealedMs": 787
+    },
+    "sinceProcessStart": {
+      "shownMs": 938,
+      "backendDoneMs": 1128,
+      "frontendReadyMs": 1168,
+      "completeMs": 1168,
+      "revealedMs": 1170
+    }
+  },
+  "log": [
+    {
+      "at": -754,
+      "msg": "launch (explorer.exe, outside the app container)",
+      "cmd": "D:\\t\\m\\studio-new-warm-3.cmd"
+    },
+    {
+      "at": 909,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 913,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": 913,
+      "msg": "splash visible"
+    },
+    {
+      "at": 1077,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 1086,
+      "msg": "正在檢查環境…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": []
+    },
+    {
+      "at": 1090,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": false
+    },
+    {
+      "at": 1090,
+      "msg": "main visible"
+    },
+    {
+      "at": 1117,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": true
+    },
+    {
+      "at": 1145,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": []
+    },
+    {
+      "at": 1179,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.3.1",
+      "actions": []
+    },
+    {
+      "at": 1179,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 1228,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 1228,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 1229,
+      "msg": "screenshot",
+      "file": "studio-new-warm-3-splash.png"
+    },
+    {
+      "at": 2359,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 2360,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 3825,
+      "msg": "screenshot",
+      "file": "studio-new-warm-3-main.png"
+    }
+  ]
+}

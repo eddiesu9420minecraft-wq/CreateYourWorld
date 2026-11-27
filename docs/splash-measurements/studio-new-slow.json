@@ -1,0 +1,324 @@
+{
+  "regression": {
+    "respondingSamples": 27,
+    "notRespondingSamples": 0,
+    "ipcProbes": 38,
+    "ipcMaxRoundTripMs": 12,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "studio-new-slow",
+  "exe": "D:/t/bin/studio-new.exe",
+  "scenario": "slow",
+  "env": {
+    "PIKARA_STUDIO_DATA": "D:/t/sd/new",
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/sd/new/EBWebView",
+    "PIKARA_SPLASH_TEST_DELAY": "db:10000"
+  },
+  "pid": 46912,
+  "processCreatedUnixMs": 1795774410916,
+  "harnessLaunchToProcessMs": 1422,
+  "sinceProcessStart": {
+    "splash page attached": 1864,
+    "splash visible": 1868,
+    "main page attached": 1933,
+    "main visible": 1942,
+    "slow notice shown": 9966,
+    "splash exit started": 12012,
+    "main ready on screen": 12041,
+    "splash window closed": 13208
+  },
+  "backend": {
+    "testHooks": "PIKARA_SPLASH_TEST_DELAY=db:10000",
+    "version": "0.3.1",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "db",
+        "state": "done",
+        "ms": 10003,
+        "detail": "結構版本 v3"
+      },
+      {
+        "id": "recover",
+        "state": "done",
+        "ms": 0,
+        "detail": "沒有中斷的工作"
+      },
+      {
+        "id": "services",
+        "state": "done",
+        "ms": 0,
+        "detail": "佇列與自動製作已啟動"
+      },
+      {
+        "id": "projects",
+        "state": "done",
+        "ms": 0,
+        "detail": "0 個專案"
+      },
+      {
+        "id": "env",
+        "state": "done",
+        "ms": 139,
+        "detail": "ffmpeg・ffprobe・git"
+      }
+    ],
+    "pluginStartSinceProcessMs": 771,
+    "timings": {
+      "startedUnixMs": 1795774411687,
+      "shownMs": 1086,
+      "backendDoneMs": 11183,
+      "frontendReadyMs": 11232,
+      "completeMs": 11232,
+      "revealedMs": 11234
+    },
+    "sinceProcessStart": {
+      "shownMs": 1857,
+      "backendDoneMs": 11954,
+      "frontendReadyMs": 12003,
+      "completeMs": 12003,
+      "revealedMs": 12005
+    }
+  },
+  "log": [
+    {
+      "at": -1421,
+      "msg": "launch (explorer.exe, outside the app container)",
+      "cmd": "D:\\t\\m\\studio-new-slow.cmd"
+    },
+    {
+      "at": 1864,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 1867,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": 1868,
+      "msg": "splash visible"
+    },
+    {
+      "at": 1933,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 1936,
+      "msg": "正在開啟資料庫…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "0/5",
+      "segs": "running,pending,pending,pending,pending",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": []
+    },
+    {
+      "at": 1942,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": false
+    },
+    {
+      "at": 1942,
+      "msg": "main visible"
+    },
+    {
+      "at": 1963,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": true
+    },
+    {
+      "at": 2063,
+      "msg": "screenshot",
+      "file": "studio-new-slow-splash.png"
+    },
+    {
+      "at": 2963,
+      "msg": "screenshot",
+      "file": "studio-new-slow-splash-later.png"
+    },
+    {
+      "at": 9966,
+      "msg": "正在開啟資料庫…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "0/5",
+      "segs": "running,pending,pending,pending,pending",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 8 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit"
+      ]
+    },
+    {
+      "at": 9966,
+      "msg": "slow notice shown",
+      "text": "這一步已經花了 8 秒，比平常久。",
+      "actions": [
+        "open_data",
+        "quit"
+      ]
+    },
+    {
+      "at": 10084,
+      "msg": "screenshot",
+      "file": "studio-new-slow-slow.png"
+    },
+    {
+      "at": 10782,
+      "msg": "正在開啟資料庫…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "0/5",
+      "segs": "running,pending,pending,pending,pending",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 9 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit"
+      ]
+    },
+    {
+      "at": 11795,
+      "msg": "正在開啟資料庫…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "0/5",
+      "segs": "running,pending,pending,pending,pending",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 10 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit"
+      ]
+    },
+    {
+      "at": 11827,
+      "msg": "正在檢查環境…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit"
+      ]
+    },
+    {
+      "at": 11978,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit"
+      ]
+    },
+    {
+      "at": 12012,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit"
+      ]
+    },
+    {
+      "at": 12012,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 12041,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 12041,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 13208,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 13209,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 14958,
+      "msg": "screenshot",
+      "file": "studio-new-slow-main.png"
+    }
+  ]
+}

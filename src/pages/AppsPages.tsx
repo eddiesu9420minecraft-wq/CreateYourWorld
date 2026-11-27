@@ -1,5 +1,5 @@
 import { api, ACTIVE_STATES, formatBytes, formatDate, type ProductView } from "../api";
-import { PikaraLogo } from "../pikara-splash";
+import { PikaraLogo } from "@pikara/splash";
 import { useStore } from "../store";
 import { ProductGlyph } from "../components/Icon";
 import { ProductActions, ProductCard } from "../components/Product";

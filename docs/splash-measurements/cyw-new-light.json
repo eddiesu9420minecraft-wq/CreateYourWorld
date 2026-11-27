@@ -1,0 +1,319 @@
+{
+  "regression": {
+    "respondingSamples": 21,
+    "notRespondingSamples": 0,
+    "ipcProbes": 34,
+    "ipcMaxRoundTripMs": 41,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "cyw-new-light",
+  "exe": "D:/t/bin/cyw-new.exe",
+  "scenario": "slow",
+  "env": {
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/cd/new-wv",
+    "PIKARA_SPLASH_TEST_DELAY": "releases:9000"
+  },
+  "pid": 43472,
+  "processCreatedUnixMs": 1795775340287,
+  "harnessLaunchToProcessMs": 4,
+  "sinceProcessStart": {
+    "splash page attached": 577,
+    "splash visible": 588,
+    "main page attached": 711,
+    "main visible": 725,
+    "main ready on screen": 725,
+    "slow notice shown": 5664,
+    "splash exit started": 9714,
+    "splash window closed": 10451
+  },
+  "backend": {
+    "testHooks": "PIKARA_SPLASH_TEST_DELAY=releases:9000",
+    "version": "0.1.0-alpha",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "paths",
+        "state": "done",
+        "ms": 1,
+        "detail": null
+      },
+      {
+        "id": "settings",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "installed",
+        "state": "done",
+        "ms": 1,
+        "detail": "1 個"
+      },
+      {
+        "id": "jobs",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "releases",
+        "state": "done",
+        "ms": 9026,
+        "detail": null
+      }
+    ],
+    "pluginStartSinceProcessMs": 20,
+    "timings": {
+      "startedUnixMs": 1795775340307,
+      "shownMs": 583,
+      "backendDoneMs": 9606,
+      "frontendReadyMs": 9653,
+      "completeMs": 9653,
+      "revealedMs": 9655
+    },
+    "sinceProcessStart": {
+      "shownMs": 603,
+      "backendDoneMs": 9626,
+      "frontendReadyMs": 9673,
+      "completeMs": 9673,
+      "revealedMs": 9675
+    }
+  },
+  "log": [
+    {
+      "at": -4,
+      "msg": "launch (direct spawn)"
+    },
+    {
+      "at": 577,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 588,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": 588,
+      "msg": "splash visible"
+    },
+    {
+      "at": 711,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 712,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 725,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 725,
+      "msg": "main visible"
+    },
+    {
+      "at": 725,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 831,
+      "msg": "screenshot",
+      "file": "cyw-new-light-splash.png"
+    },
+    {
+      "at": 1730,
+      "msg": "screenshot",
+      "file": "cyw-new-light-splash-later.png"
+    },
+    {
+      "at": 5664,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 5 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 5664,
+      "msg": "slow notice shown",
+      "text": "這一步已經花了 5 秒，比平常久。",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 5812,
+      "msg": "screenshot",
+      "file": "cyw-new-light-slow.png"
+    },
+    {
+      "at": 6551,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 6 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 7559,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 7 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 8539,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 8 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9541,
+      "msg": "正在向 GitHub 查詢最新版本…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": null,
+      "slow": true,
+      "slowText": "這一步已經花了 9 秒，比平常久。",
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9634,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9714,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.1.0-alpha",
+      "actions": [
+        "skip_network"
+      ]
+    },
+    {
+      "at": 9714,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 10451,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 10691,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 11247,
+      "msg": "screenshot",
+      "file": "cyw-new-light-main.png"
+    }
+  ]
+}

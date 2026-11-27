@@ -1,0 +1,67 @@
+{
+  "regression": {
+    "respondingSamples": 43,
+    "notRespondingSamples": 41,
+    "ipcProbes": 0,
+    "ipcMaxRoundTripMs": 0,
+    "ipcOver1s": 0,
+    "pass": false
+  },
+  "name": "studio-NEGATIVE-CONTROL-sync-cmds",
+  "exe": "D:/t/bin/studio-hang-control.exe",
+  "scenario": "slow",
+  "env": {
+    "PIKARA_STUDIO_DATA": "D:/t/sd/hang",
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/sd/hang/EBWebView",
+    "PIKARA_SPLASH_TEST_DELAY": "db:10000"
+  },
+  "pid": null,
+  "processCreatedUnixMs": null,
+  "harnessLaunchToProcessMs": null,
+  "sinceProcessStart": {
+    "splash page attached": null,
+    "splash visible": null,
+    "splash window closed": null
+  },
+  "backend": null,
+  "log": [
+    {
+      "at": null,
+      "msg": "launch (explorer.exe, outside the app container)",
+      "cmd": "D:\\t\\m\\studio-NEGATIVE-CONTROL-sync-cmds.cmd"
+    },
+    {
+      "at": null,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": null,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": null,
+      "msg": "splash visible"
+    },
+    {
+      "at": null,
+      "msg": "splash window closed"
+    },
+    {
+      "at": null,
+      "msg": "TIMEOUT"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "regression": {
+    "respondingSamples": 3,
+    "notRespondingSamples": 0,
+    "ipcProbes": 0,
+    "ipcMaxRoundTripMs": 0,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "studio-base-warm-2",
+  "exe": "D:/t/bin/studio-base.exe",
+  "scenario": "normal",
+  "env": {
+    "PIKARA_STUDIO_DATA": "D:/t/sd/base",
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/sd/base/EBWebView"
+  },
+  "pid": 20564,
+  "processCreatedUnixMs": 1795775265965,
+  "harnessLaunchToProcessMs": 604,
+  "sinceProcessStart": {
+    "main page attached": 1265,
+    "main visible": 1267,
+    "main ready on screen": 1337
+  },
+  "backend": {
+    "error": "Command plugin:pikara-splash|status not allowed by ACL"
+  },
+  "log": [
+    {
+      "at": -604,
+      "msg": "launch (explorer.exe, outside the app container)",
+      "cmd": "D:\\t\\m\\studio-base-warm-2.cmd"
+    },
+    {
+      "at": 1265,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 1267,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": false
+    },
+    {
+      "at": 1267,
+      "msg": "main visible"
+    },
+    {
+      "at": 1337,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 1337,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 2529,
+      "msg": "screenshot",
+      "file": "studio-base-warm-2-main.png"
+    }
+  ]
+}

@@ -10,7 +10,6 @@ mod procs;
 mod runtime;
 mod selfupdate;
 mod settings;
-pub mod splash;
 mod util;
 mod verify;
 
@@ -18,7 +17,7 @@ use crate::hub::{Core, ProductView, SharedCore};
 use crate::downloads::JobInfo;
 use crate::github::{Channel, RateInfo};
 use crate::settings::{Settings, UpdateMode};
-use crate::splash::{SplashController, SplashSnapshot};
+use pikara_splash::{Action, Failure, SplashExt};
 use serde::Serialize;
 use std::sync::Arc;
 use std::time::Duration;
@@ -44,77 +43,82 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-const INIT_STEPS: u32 = 5;
+/// Startup steps shown on the splash (shared Pikara splash, `crates/pikara-splash`).
+fn splash_config() -> pikara_splash::Config<tauri::Wry> {
+    pikara_splash::Config::new()
+        .step("paths", "資料目錄")
+        .step("settings", "設定")
+        .step("installed", "已安裝的應用程式")
+        .step("jobs", "下載佇列")
+        .step("releases", "最新版本")
+        .slow_after(Duration::from_secs(5))
+        .slow_action_for("releases", Action::new("skip_network", "略過，先使用快取"))
+        .on_action(|app, id| {
+            if id == "open_data" {
+                if let Some(core) = app.try_state::<SharedCore>() {
+                    let dir = core.paths.data.clone();
+                    let target = if dir.exists() { dir } else { dir.parent().map(|p| p.to_path_buf()).unwrap_or(dir) };
+                    let _ = app.opener().open_path(target.to_string_lossy(), None::<&str>);
+                }
+            }
+        })
+}
 
 /// Real startup work, reported step by step to the splash screen. No artificial delays.
 async fn initialize(app: AppHandle, core: SharedCore) {
-    let splash = app.state::<SplashController>();
+    let splash = app.splash();
 
-    splash.step(&app, 1, "正在準備資料目錄…");
-    if let Err(e) = core.paths.ensure() {
-        splash.warn(format!("無法建立資料目錄：{e}"));
+    splash.begin("paths", "正在準備資料目錄…");
+    loop {
+        let r = match splash.injected_failure("paths") {
+            Some(e) => Err(std::io::Error::other(e)),
+            None => core.paths.ensure(),
+        };
+        let Err(e) = r else { break };
+        let f = Failure::new("paths", "無法建立資料目錄", format!("{}
+{e}", core.paths.data.display()))
+            .action(Action::new("open_data", "開啟資料夾"))
+            .action(Action::new("continue", "仍然啟動"))
+            .action(Action::quit("結束"))
+            .action(Action::primary("retry", "重試"));
+        match splash.fail(f).await.as_str() {
+            "continue" => {
+                splash.warn("paths", format!("資料目錄無法建立，下載與安裝會失敗：{e}"));
+                break;
+            }
+            _ => continue, // retry, or re-check after the folder was opened
+        }
     }
 
-    splash.step(&app, 2, "正在讀取設定…");
+    splash.begin("settings", "正在讀取設定…");
     *core.settings.write().unwrap() = util::load_json::<Settings>(&core.paths.settings_file()).clamp();
 
-    splash.step(&app, 3, "正在檢查已安裝的應用程式…");
+    splash.begin("installed", "正在檢查已安裝的應用程式…");
     *core.installed.lock().unwrap() = util::load_json(&core.paths.installed_file());
     let c = core.clone();
     let _ = tokio::task::spawn_blocking(move || hub::verify_installed(&c)).await;
+    let n = core.installed.lock().unwrap().apps.len();
+    splash.done_with("installed", format!("{n} 個"));
 
-    splash.step(&app, 4, "正在恢復下載佇列…");
+    splash.begin("jobs", "正在恢復下載佇列…");
     core.jobs.restore();
 
-    splash.step(&app, 5, "正在向 GitHub 查詢最新版本…");
-    // Warms the release cache so the main window opens with real data.
-    // Bounded so an unreachable network can't hold the splash forever; failures fall back to cache.
-    let _ = tokio::time::timeout(Duration::from_secs(12), hub::product_views(&core, false)).await;
+    splash.begin("releases", "正在向 GitHub 查詢最新版本…");
+    // Warms the release cache so the main window opens with real data. Bounded so an unreachable
+    // network can't hold the splash; after 5 s the user may also skip it (cached data is used).
+    tokio::select! {
+        r = tokio::time::timeout(Duration::from_secs(12), hub::product_views(&core, false)) => {
+            if r.is_err() {
+                splash.warn("releases", "GitHub 沒有在 12 秒內回應，先顯示快取的資料");
+            }
+        }
+        _ = splash.wait_action(&["skip_network"]) => splash.skip("releases", "已略過，先使用快取"),
+    }
 
-    splash.backend_done(&app);
+    splash.backend_done();
 
     // Update checks run in the background after startup; they never block the splash.
     tauri::async_runtime::spawn(scheduler(app.clone(), core.clone()));
-
-    // Safety net: never leave the user staring at the splash if the main page fails to report.
-    let h = app.clone();
-    tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(10)).await;
-        h.state::<SplashController>().frontend_ready(&h);
-    });
-}
-
-#[tauri::command]
-fn splash_status(splash: State<'_, SplashController>) -> SplashSnapshot {
-    splash.snapshot()
-}
-
-#[tauri::command]
-fn splash_shown(app: AppHandle) {
-    splash::show_splash(&app);
-}
-
-#[tauri::command]
-fn splash_reveal_main(app: AppHandle) {
-    splash::reveal_main(&app);
-}
-
-#[tauri::command]
-fn splash_close(app: AppHandle) {
-    splash::close_splash(&app);
-}
-
-#[tauri::command]
-fn main_ready(app: AppHandle, splash: State<'_, SplashController>) {
-    splash.frontend_ready(&app);
-}
-
-/// Resolves once backend initialization has finished.
-#[tauri::command]
-async fn wait_ready(splash: State<'_, SplashController>) -> Res<()> {
-    let mut rx = splash.ready_receiver();
-    rx.wait_for(|v| *v).await.map_err(err)?;
-    Ok(())
 }
 
 #[derive(Serialize)]
@@ -390,32 +394,16 @@ async fn network_status(core: State<'_, SharedCore>) -> Res<NetworkStatus> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(SplashController::new(INIT_STEPS))
+        .plugin(pikara_splash::init(splash_config()))
         .setup(|app| {
             let handle = app.handle().clone();
             let paths = paths::Paths::resolve(&handle)?;
             let core: SharedCore = Arc::new(Core::new(paths)?);
             app.manage(core.clone());
-
-            // Fallback: show the splash even if its page is slow to report first paint.
-            let h = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                tokio::time::sleep(Duration::from_millis(1500)).await;
-                if !h.state::<SplashController>().snapshot().complete {
-                    splash::show_splash(&h);
-                }
-            });
-
             tauri::async_runtime::spawn(initialize(handle, core));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            splash_status,
-            splash_shown,
-            splash_reveal_main,
-            splash_close,
-            main_ready,
-            wait_ready,
             app_info,
             get_products,
             install_app,

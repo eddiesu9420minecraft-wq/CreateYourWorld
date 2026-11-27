@@ -646,6 +646,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "tauri-plugin-pikara-splash",
  "tokio",
  "zip",
 ]
@@ -4156,6 +4157,16 @@ dependencies = [
  "url",
  "windows 0.62.2",
  "zbus",
+]
+
+[[package]]
+name = "tauri-plugin-pikara-splash"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
 ]
 
 [[package]]

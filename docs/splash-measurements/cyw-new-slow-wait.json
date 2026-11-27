@@ -1,0 +1,198 @@
+{
+  "regression": {
+    "respondingSamples": 4,
+    "notRespondingSamples": 0,
+    "ipcProbes": 1,
+    "ipcMaxRoundTripMs": 56,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "cyw-new-slow-wait",
+  "exe": "D:/t/bin/cyw-new.exe",
+  "scenario": "slow",
+  "env": {
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/cd/new-wv",
+    "HTTPS_PROXY": "http://10.255.255.1:8080",
+    "HTTP_PROXY": "http://10.255.255.1:8080"
+  },
+  "pid": 19928,
+  "processCreatedUnixMs": 1795774911769,
+  "harnessLaunchToProcessMs": 4,
+  "sinceProcessStart": {
+    "splash page attached": 542,
+    "splash visible": 545,
+    "main page attached": 628,
+    "main visible": 642,
+    "main ready on screen": 720,
+    "splash exit started": 839,
+    "splash window closed": 1581
+  },
+  "backend": {
+    "testHooks": null,
+    "version": "0.1.0-alpha",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "paths",
+        "state": "done",
+        "ms": 1,
+        "detail": null
+      },
+      {
+        "id": "settings",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "installed",
+        "state": "done",
+        "ms": 2,
+        "detail": "1 個"
+      },
+      {
+        "id": "jobs",
+        "state": "done",
+        "ms": 0,
+        "detail": null
+      },
+      {
+        "id": "releases",
+        "state": "done",
+        "ms": 36,
+        "detail": null
+      }
+    ],
+    "pluginStartSinceProcessMs": 38,
+    "timings": {
+      "startedUnixMs": 1795774911807,
+      "shownMs": 506,
+      "backendDoneMs": 562,
+      "frontendReadyMs": 766,
+      "completeMs": 766,
+      "revealedMs": 768
+    },
+    "sinceProcessStart": {
+      "shownMs": 544,
+      "backendDoneMs": 600,
+      "frontendReadyMs": 804,
+      "completeMs": 804,
+      "revealedMs": 806
+    }
+  },
+  "log": [
+    {
+      "at": -4,
+      "msg": "launch (direct spawn)"
+    },
+    {
+      "at": 542,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 545,
+      "msg": "正在啟動…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "",
+      "segs": "",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "",
+      "actions": []
+    },
+    {
+      "at": 545,
+      "msg": "splash visible"
+    },
+    {
+      "at": 628,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 629,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 642,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": false
+    },
+    {
+      "at": 642,
+      "msg": "main visible"
+    },
+    {
+      "at": 719,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 720,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 795,
+      "msg": "screenshot",
+      "file": "cyw-new-slow-wait-splash.png"
+    },
+    {
+      "at": 839,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": null,
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.1.0-alpha",
+      "actions": []
+    },
+    {
+      "at": 839,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 1581,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 1818,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 2373,
+      "msg": "screenshot",
+      "file": "cyw-new-slow-wait-main.png"
+    }
+  ]
+}

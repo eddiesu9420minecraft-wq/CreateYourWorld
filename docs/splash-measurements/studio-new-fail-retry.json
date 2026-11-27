@@ -1,0 +1,271 @@
+{
+  "regression": {
+    "respondingSamples": 9,
+    "notRespondingSamples": 0,
+    "ipcProbes": 2,
+    "ipcMaxRoundTripMs": 3,
+    "ipcOver1s": 0,
+    "pass": true
+  },
+  "name": "studio-new-fail-retry",
+  "exe": "D:/t/bin/studio-new.exe",
+  "scenario": "fail-retry",
+  "env": {
+    "PIKARA_STUDIO_DATA": "D:/t/sd/fail",
+    "WEBVIEW2_USER_DATA_FOLDER": "D:/t/sd/fail/EBWebView"
+  },
+  "pid": 28780,
+  "processCreatedUnixMs": 1795774428767,
+  "harnessLaunchToProcessMs": 1008,
+  "sinceProcessStart": {
+    "main page attached": 1382,
+    "splash page attached": 1438,
+    "splash visible": 1441,
+    "failure shown": 1441,
+    "retry clicked": 2385,
+    "main visible": 2393,
+    "main ready on screen": 2689,
+    "splash exit started": 2718,
+    "splash window closed": 3840
+  },
+  "backend": {
+    "testHooks": null,
+    "version": "0.3.1",
+    "warnings": [],
+    "steps": [
+      {
+        "id": "db",
+        "state": "done",
+        "ms": 26,
+        "detail": "結構版本 v3"
+      },
+      {
+        "id": "recover",
+        "state": "done",
+        "ms": 1,
+        "detail": "沒有中斷的工作"
+      },
+      {
+        "id": "services",
+        "state": "done",
+        "ms": 0,
+        "detail": "佇列與自動製作已啟動"
+      },
+      {
+        "id": "projects",
+        "state": "done",
+        "ms": 0,
+        "detail": "0 個專案"
+      },
+      {
+        "id": "env",
+        "state": "done",
+        "ms": 177,
+        "detail": "ffmpeg・ffprobe・git"
+      }
+    ],
+    "pluginStartSinceProcessMs": 564,
+    "timings": {
+      "startedUnixMs": 1795774429331,
+      "shownMs": 873,
+      "backendDoneMs": 2032,
+      "frontendReadyMs": 2084,
+      "completeMs": 2084,
+      "revealedMs": 2086
+    },
+    "sinceProcessStart": {
+      "shownMs": 1437,
+      "backendDoneMs": 2596,
+      "frontendReadyMs": 2648,
+      "completeMs": 2648,
+      "revealedMs": 2650
+    }
+  },
+  "log": [
+    {
+      "at": -1007,
+      "msg": "launch (explorer.exe, outside the app container)",
+      "cmd": "D:\\t\\m\\studio-new-fail-retry.cmd"
+    },
+    {
+      "at": 1382,
+      "msg": "main page attached",
+      "url": "http://tauri.localhost/"
+    },
+    {
+      "at": 1438,
+      "msg": "splash page attached",
+      "url": "http://tauri.localhost/splash.html"
+    },
+    {
+      "at": 1441,
+      "msg": "無法開啟 Studio 資料庫",
+      "vis": "visible",
+      "mounted": true,
+      "count": "1/5",
+      "segs": "failed,pending,pending,pending,pending",
+      "failed": true,
+      "failTitle": "無法開啟 Studio 資料庫",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 1441,
+      "msg": "splash visible"
+    },
+    {
+      "at": 1441,
+      "msg": "failure shown",
+      "title": "無法開啟 Studio 資料庫",
+      "actions": [
+        "open_data",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 2343,
+      "msg": "screenshot",
+      "file": "studio-new-fail-retry-splash.png"
+    },
+    {
+      "at": 2383,
+      "msg": "screenshot",
+      "file": "studio-new-fail-retry-failure.png"
+    },
+    {
+      "at": 2385,
+      "msg": "user fix: deleted",
+      "f": "D:/t/sd/fail/studio.db"
+    },
+    {
+      "at": 2385,
+      "msg": "user fix: deleted",
+      "f": "D:/t/sd/fail/studio.db-wal"
+    },
+    {
+      "at": 2385,
+      "msg": "user fix: deleted",
+      "f": "D:/t/sd/fail/studio.db-shm"
+    },
+    {
+      "at": 2385,
+      "msg": "retry clicked"
+    },
+    {
+      "at": 2393,
+      "msg": "main",
+      "vis": "visible",
+      "ready": false,
+      "overlay": true
+    },
+    {
+      "at": 2393,
+      "msg": "main visible"
+    },
+    {
+      "at": 2421,
+      "msg": "正在檢查環境…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "4/5",
+      "segs": "done,done,done,done,running",
+      "failed": false,
+      "failTitle": "無法開啟 Studio 資料庫",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 2546,
+      "msg": "screenshot",
+      "file": "studio-new-fail-retry-splash-later.png"
+    },
+    {
+      "at": 2608,
+      "msg": "正在載入介面…",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": "無法開啟 Studio 資料庫",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": false,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 2689,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": true
+    },
+    {
+      "at": 2689,
+      "msg": "main ready on screen"
+    },
+    {
+      "at": 2717,
+      "msg": "準備就緒",
+      "vis": "visible",
+      "mounted": true,
+      "count": "5/5",
+      "segs": "done,done,done,done,done",
+      "failed": false,
+      "failTitle": "無法開啟 Studio 資料庫",
+      "slow": false,
+      "slowText": null,
+      "warn": null,
+      "exiting": true,
+      "version": "v0.3.1",
+      "actions": [
+        "open_data",
+        "quit",
+        "retry"
+      ]
+    },
+    {
+      "at": 2718,
+      "msg": "splash exit started"
+    },
+    {
+      "at": 3840,
+      "msg": "splash window closed"
+    },
+    {
+      "at": 3842,
+      "msg": "main",
+      "vis": "visible",
+      "ready": true,
+      "overlay": false
+    },
+    {
+      "at": 5292,
+      "msg": "screenshot",
+      "file": "studio-new-fail-retry-main.png"
+    }
+  ]
+}
