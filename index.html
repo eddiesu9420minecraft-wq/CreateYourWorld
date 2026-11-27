@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Your World.</title>
+    <style>
+      /* Paint before JS runs so neither window ever shows a white frame. */
+      html, body { margin: 0; background: transparent; }
+      html.main-window, html.main-window body { background: #121214; }
+    </style>
+    <script>
+      // Tauri injects the window label before page scripts run.
+      try {
+        var label = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.metadata.currentWindow.label;
+        if (label !== "splash") document.documentElement.classList.add("main-window");
+      } catch (e) { document.documentElement.classList.add("main-window"); }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

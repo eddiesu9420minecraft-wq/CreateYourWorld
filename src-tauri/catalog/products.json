@@ -1,0 +1,30 @@
+[
+  {
+    "id": "pikara-science-studio",
+    "name": "Pikara Science Studio",
+    "tagline": "AI 科學影片製作工作台",
+    "description": "以 Tauri 2、Remotion 與 CosyVoice 3 打造的科學影片製作工作台：從腳本、配音到動畫輸出一站完成。",
+    "repo": "eddiesu9420minecraft-wq/PikaraScienceStudio",
+    "glyph": "atom",
+    "assets": {
+      "windows-x86_64": [
+        { "pattern": "^PikaraScienceStudio\\.exe$", "kind": "portable" },
+        { "pattern": "_x64-setup\\.exe$", "kind": "nsis", "launch": "Pikara Science Studio.exe" }
+      ],
+      "macos-aarch64": [
+        { "pattern": "_aarch64\\.app\\.tar\\.gz$", "kind": "app-tar" },
+        { "pattern": "_aarch64\\.dmg$", "kind": "dmg" },
+        { "pattern": "_universal\\.dmg$", "kind": "dmg" }
+      ],
+      "macos-x86_64": [
+        { "pattern": "_x64\\.app\\.tar\\.gz$", "kind": "app-tar" },
+        { "pattern": "_x64\\.dmg$", "kind": "dmg" },
+        { "pattern": "_universal\\.dmg$", "kind": "dmg" }
+      ],
+      "linux-x86_64": [
+        { "pattern": "_amd64\\.AppImage$", "kind": "app-image" }
+      ]
+    },
+    "ignoreAssets": ["\\.sig$", "SHA256SUMS", "skill\\.zip$"]
+  }
+]
