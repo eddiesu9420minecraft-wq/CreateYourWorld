@@ -1,0 +1,26 @@
+{
+  "product": "create-your-world",
+  "version": "0.1.0-alpha",
+  "notes": "**Create Your World. · Free Forever. — by pikara™**\n\nPikara 軟體管理中心的第一個 alpha 版本。永遠免費：無訂閱、無付費解鎖、無強制廣告。\n\n### 內容\n- 啟動畫面與主視窗的無縫轉場、品牌介面\n- 從 GitHub Releases 取得真實版本、可斷點續傳的下載佇列、SHA-256 驗證\n- 安裝、啟動、更新、回復、解除安裝；首個整合產品為 Pikara Science Studio\n- Pikara Secure Network：DNS over HTTPS（Cloudflare / Google）、只使用 HTTPS、嚴格驗證憑證、主機允許清單\n- 安全自動更新：已簽章的 update.json（公鑰內建於程式）、防降級與重放攻擊、SHA-256 加 minisign 簽章驗證\n\n### 已知限制\n- **macOS 版沒有 Apple 簽章，也未經公證。** 第一次開啟會被 Gatekeeper 阻擋：請在 App 上按右鍵選「打開」，或執行 `xattr -dr com.apple.quarantine \"/Applications/Create Your World.app\"`。\n- macOS 版由 GitHub Actions 編譯。除非 docs/TESTING.md 列出實機測試結果，否則**尚未在實機上測試**。\n- 共用運行環境（Python、FFmpeg、Whisper、llama.cpp）尚未開放。\n- 尚未發布 Linux 版。\n\n所有檔案的校驗值列在 `SHA256SUMS.txt`。安裝包以 Pikara 發布金鑰簽章（minisign，金鑰 ID `13216449EEB947A5`）。\n",
+  "pub_date": "2026-11-27T10:06:37Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.0-alpha/CreateYourWorld_0.1.0-alpha_macos-arm64.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRTQxTzgwMStoRHlLUzZWRnFpMjY0c1Z6WnJabHZRaGQrdFlRUzJxZVdOTEZJNjVwSUtWL0VOYUJCaTgxdngzekI0RXgzcEgvbURyN1B0TWQ0L0xSaFFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NzczNTA2CWZpbGU6Q3JlYXRlIFlvdXIgV29ybGQuYXBwLnRhci5negl2ZXJzaW9uOjAuMS4wLWFscGhhCjF2NEZmVDNxYXdITjNMM25rcmhGTG0rdVdZWjdNQVhWTkRES055Y08vZVRGYWpiMVI3aTllcVhkVzZoL0VJYUIzUWE4YTJ0enlCNlR4NDhpbVpuOUJRPT0K",
+      "sha256": "dff78f6a5a87c7f8844960ce4bf2b8964a0e3d3014f90f60a6e9a07f12be6ca8",
+      "size": 19075792
+    },
+    "darwin-x86_64": {
+      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.0-alpha/CreateYourWorld_0.1.0-alpha_macos-x64.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRS9EMzRRR3krZXNtbU9yV2JrelJWbjNTL0E3eGFQRHV0MnFnbEFPdkszYWFZU1FyMFAwWFUwTmJsTGZJVHpUQkd0ZkcweVlSU3RTQURVWFROWUhNcGdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NzczNzMwCWZpbGU6Q3JlYXRlIFlvdXIgV29ybGQuYXBwLnRhci5negl2ZXJzaW9uOjAuMS4wLWFscGhhCnpBSzZBM3lsRmd3YWlFM3Rhd2gzeHpLNEZVaFdCUlJHZmpBK1dPTkFVcklZOEJXakhJSDF4WnU1dnVqU3dQNUZpaHNuTVZwNkdrWi9vcVcyalhlRkJ3PT0K",
+      "sha256": "c5dee5fae561cc5f64b6ee5b222f2e1d2a7cc7d4cc6edc367b459f13ba581f46",
+      "size": 19298216
+    },
+    "windows-x86_64": {
+      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.0-alpha/CreateYourWorld_0.1.0-alpha_windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRTdYZXVlRmt3YnRKVkVPN1Mvc2JocDRoSlovK1ZQeFA3NStFTnZNQWVDR2RkVkZ3WVh0dm5NWGJaaEtqY2d6Qm94amtiME50WGIwZG9QcHo1VGMrSGdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1NzczMzg0CWZpbGU6Q3JlYXRlIFlvdXIgV29ybGRfMC4xLjAtYWxwaGFfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMS4wLWFscGhhCmJtWWxtQ0RINS9DaGpUcVNxN0MvWTFaUERWY3FwT1V4RThvSUhnREF1TFB5MEFPRzVGZUZPaGdVOHhjZkk0ZUtQOXJoaFlFYWJRdTNaQXFXVmhkRUNnPT0K",
+      "sha256": "62c1aafb993ccaf22b12d444cd3b220b9b282721b745b0e695c96b7e8bb67744",
+      "size": 18247051
+    }
+  }
+}
