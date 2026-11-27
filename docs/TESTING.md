@@ -71,3 +71,30 @@
 
 ## 尚未測試
 - macOS 實機（DMG 掛載、`.app` 啟動與自身更新、Metal 與 Rosetta 偵測）、Linux、GitHub Actions（等待 `workflow` 權限）、跨版本自動更新（需要先發布 v0.1.0-alpha 與下一個版本）、DNS 遭竄改測試（在 CI 執行）。
+
+## 2026-11-27（晚上）· 發布與真實跨版本更新
+
+### CI（GitHub Actions，全部實際執行）
+- `ci`：Windows、macOS ARM64（`macos-15`）、macOS Intel（`macos-15-intel`）、Linux 共 8 個 job 全部通過，包含 pikara-secure 的連網安全測試。
+- `dns-tamper`：在 4 個平台上把 hosts 檔中的 GitHub 網域指向 `10.255.255.1`。系統 DNS 確實被竄改（例如 `api.github.com → 10.255.255.1`），使用系統 DNS 的用戶端連線失敗；Pikara Secure Network 經 Cloudflare DoH 取得真實 IP，HTTPS 驗證通過。
+- macOS 的 `macos-14` runner 已停用（job 一直沒被分配到 runner），已改用 `macos-15` 與 `macos-15-intel`。
+
+### 發布
+- v0.1.0-alpha、v0.1.1-alpha、v0.1.2-alpha 都由 `release.yml` 發布。每個版本都有 Windows NSIS、macOS ARM64 / x64 的 `.app.tar.gz`（附 `.sig`）與 DMG，以及 `SHA256SUMS.txt`；`update.json` 在所有檔案上傳完成並發布後才提交。
+- 冒煙測試：3 個平台的正式 binary 都在 GitHub 的對應 runner 上實際執行 `--pikara-version` 並輸出正確版本。**這是 GitHub 的虛擬 Mac，不是 Mac 實機。**
+- 第一次發布時，macOS 因 `APPLE_CERTIFICATE` 是空值而簽章失敗；已修正為未設定時不傳入。
+- 另以本機獨立驗證已發布的 v0.1.0-alpha：raw `update.json` 以內建公鑰驗證通過（3 個平台），`SHA256SUMS.txt` 相符，Windows 安裝包簽章有效。
+
+### 真實跨版本更新（Windows 11，容器外的真實安裝，看不見的桌面）
+- 測試程序改在看不見的 Windows 桌面上執行（`tools/test/hidden-desktop/`）：不顯示視窗、不搶焦點（每一步都檢查前景視窗，都還是使用者原本的視窗）；安裝程式一律使用 `/S` 靜默模式。
+- 已安裝的 CI 版 v0.1.0-alpha 啟動後，自動經 DoH 取得並驗證 `update.json`，發現 0.1.1-alpha；防重放狀態寫在真實磁碟上。
+- **竄改測試**：下載到 10.5/18.2 MB 時暫停，經 WSL 在真實磁碟上改掉 `.part` 檔中的 8 個位元組，再續傳（從 10,564,207 bytes 繼續）→ SHA-256 不符，拒絕安裝、刪除檔案、標示安全警示；已安裝的版本仍是 0.1.0-alpha。
+- **正常更新 0.1.0-alpha → 0.1.1-alpha**：SHA-256 與發布簽章皆通過 → 輔助程序備份 → 靜默安裝（exit 0）→ 新 binary 回報 0.1.1-alpha → 移除備份。`installed.json` 的雜湊在更新前後完全相同（使用者資料保留）。
+- **正常更新 0.1.1-alpha → 0.1.2-alpha**：同樣成功。
+- **發現的問題**：兩次更新後，舊版輔助程序都沒有成功重新啟動 CYW（沒有當機紀錄）。v0.1.2-alpha 的輔助程序改為確認新程序持續執行，否則重試並記錄。以 v0.1.2 的輔助程序實際重新安裝 v0.1.2 並重新啟動：`relaunched (attempt 1), pid 9992 is running`，重新啟動後狀態為 0.1.2-alpha「已是最新版本」。這次測試沒有重現「舊版程序尚未完全結束」的情況，所以要等下一次真實更新（0.1.2 → 0.1.3）才能完整確認問題已解決。
+- 測試結束後已關閉所有 CYW 測試程序；使用者正在使用的 Studio（PID 21324）從頭到尾都沒有被動到。
+
+### 尚未測試
+- macOS 實機（DMG、`.app` 自身更新、Metal 與 Rosetta 偵測）。
+- 下一次真實更新時的重新啟動（0.1.2 → 0.1.3）。
+- P4 共用運行環境（尚未實作）。
