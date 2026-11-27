@@ -50,8 +50,8 @@ jobs:
       matrix:
         include:
           - { os: windows-latest, target: x86_64-pc-windows-msvc, label: windows-x64, bundles: nsis }
-          - { os: macos-14, target: aarch64-apple-darwin, label: macos-arm64, bundles: "app,dmg" }
-          - { os: macos-14, target: x86_64-apple-darwin, label: macos-x64, bundles: "app,dmg" }
+          - { os: macos-15, target: aarch64-apple-darwin, label: macos-arm64, bundles: "app,dmg" }
+          - { os: macos-15-intel, target: x86_64-apple-darwin, label: macos-x64, bundles: "app,dmg" }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
