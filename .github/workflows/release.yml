@@ -1,0 +1,166 @@
+# Push a tag `vX.Y.Z[-pre]` matching tauri.conf.json to release.
+#
+# Order matters for security and correctness:
+#   1. draft release → 2. build + sign on every platform → verify every signature with the
+#   compiled-in Pikara key → upload → 3. confirm ALL assets are uploaded → SHA256SUMS.txt →
+#   publish release → confirm public download works → 4. only then sign + commit update.json.
+#
+# The signing key comes only from protected Actions secrets; it is never written to the repo.
+# macOS builds are NOT Apple-notarized unless the APPLE_* secrets below are configured.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ github.ref_name }}
+
+jobs:
+  create:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          VER="${TAG#v}"
+          CONF=$(jq -r .version src-tauri/tauri.conf.json)
+          if [ "$VER" != "$CONF" ]; then echo "::error::tag $TAG != tauri.conf.json version $CONF"; exit 1; fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+      - name: Draft release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          PRE=""; case "$TAG" in *-*) PRE="--prerelease";; esac
+          NOTES="docs/release-notes/$TAG.md"; [ -f "$NOTES" ] || NOTES=/dev/null
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft $PRE --title "Create Your World. $TAG" --notes-file "$NOTES"
+
+  build:
+    needs: create
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, label: windows-x64, bundles: nsis }
+          - { os: macos-14, target: aarch64-apple-darwin, label: macos-arm64, bundles: "app,dmg" }
+          - { os: macos-14, target: x86_64-apple-darwin, label: macos-x64, bundles: "app,dmg" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "${{ matrix.target }}" }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "src-tauri\ncrates/pikara-secure", key: "${{ matrix.target }}" }
+      - run: npm ci
+      - name: Build and sign
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Optional Apple signing/notarization. Unset => unsigned, not notarized (stated in notes).
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Collect with stable names
+        shell: bash
+        run: |
+          VER="${{ needs.create.outputs.version }}"; L="${{ matrix.label }}"
+          B="src-tauri/target/${{ matrix.target }}/release/bundle"
+          mkdir -p out
+          if [ "$L" = windows-x64 ]; then
+            f=$(ls "$B"/nsis/*-setup.exe); cp "$f" "out/CreateYourWorld_${VER}_${L}-setup.exe"; cp "$f.sig" "out/CreateYourWorld_${VER}_${L}-setup.exe.sig"
+          else
+            f=$(ls "$B"/macos/*.app.tar.gz); cp "$f" "out/CreateYourWorld_${VER}_${L}.app.tar.gz"; cp "$f.sig" "out/CreateYourWorld_${VER}_${L}.app.tar.gz.sig"
+            cp "$(ls "$B"/dmg/*.dmg)" "out/CreateYourWorld_${VER}_${L}.dmg"
+          fi
+          ls -la out
+      - name: Verify signatures with the compiled-in Pikara key
+        shell: bash
+        run: |
+          for s in out/*.sig; do
+            cargo run -q --manifest-path crates/pikara-secure/Cargo.toml --example verify_artifact -- "${s%.sig}" "$s"
+          done
+      - name: Smoke test (binary starts and reports its version)
+        shell: bash
+        run: |
+          VER="${{ needs.create.outputs.version }}"
+          if [ "${{ runner.os }}" = macOS ] && [ "${{ matrix.target }}" = "$(rustc -vV | sed -n 's/host: //p')" ]; then
+            out=$(src-tauri/target/${{ matrix.target }}/release/create-your-world --pikara-version); echo "$out"; [ "$out" = "$VER" ]
+          elif [ "${{ runner.os }}" = Windows ]; then
+            out=$(src-tauri/target/${{ matrix.target }}/release/create-your-world.exe --pikara-version | tr -d '\r'); echo "$out"; [ "$out" = "$VER" ]
+          else echo "cross-compiled target: not executed on this runner"; fi
+      - name: Upload to draft release
+        shell: bash
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release upload "$TAG" out/* --clobber
+
+  publish:
+    needs: [create, build]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - name: Download and check every asset is fully uploaded
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          VER="${{ needs.create.outputs.version }}"
+          REL=$(gh api "repos/${{ github.repository }}/releases" --paginate --jq ".[] | select(.tag_name==\"$TAG\")")
+          echo "$REL" | jq -r '.assets[] | "\(.state) \(.size) \(.name)"'
+          for n in "windows-x64-setup.exe" "macos-arm64.app.tar.gz" "macos-x64.app.tar.gz" "macos-arm64.dmg" "macos-x64.dmg"; do
+            for suffix in "" ".sig"; do
+              case "$n$suffix" in *.dmg.sig) continue;; esac
+              name="CreateYourWorld_${VER}_${n}${suffix}"
+              st=$(echo "$REL" | jq -r --arg n "$name" '.assets[] | select(.name==$n) | .state')
+              if [ "$st" != uploaded ]; then echo "::error::$name is not uploaded (state=$st)"; exit 1; fi
+            done
+          done
+          mkdir assets && gh release download "$TAG" -D assets
+      - name: Build SHA256SUMS.txt + update.json (verifies all signatures)
+        run: |
+          printf '%s\n' "$(gh release view "$TAG" --json body --jq .body 2>/dev/null)" > notes.txt || true
+          cargo run -q --manifest-path crates/pikara-secure/Cargo.toml --example release_manifest -- assets "${{ needs.create.outputs.version }}" "${{ github.repository }}" notes.txt manifest
+        env: { GH_TOKEN: "${{ github.token }}" }
+      - name: Sign update.json and verify like a client would
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          npx tauri signer sign manifest/update.json
+          cargo run -q --manifest-path crates/pikara-secure/Cargo.toml --example verify_manifest -- manifest/update.json manifest/update.json.sig 0.0.0
+      - name: Publish release (assets become public)
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh release upload "$TAG" manifest/SHA256SUMS.txt --clobber
+          gh release edit "$TAG" --draft=false
+          # Anonymous download must work before clients are told about it.
+          for f in $(jq -r '.platforms[].url' manifest/update.json); do
+            for i in $(seq 1 30); do curl -fsIL -o /dev/null "$f" && break; sleep 10; done
+            curl -fsIL -o /dev/null "$f"
+          done
+      - name: Publish update.json (last step)
+        run: |
+          cp manifest/update.json manifest/update.json.sig .
+          git config user.name "pikara-release-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add update.json update.json.sig
+          git commit -m "update.json: $TAG"
+          git pull --rebase origin main
+          git push origin HEAD:main

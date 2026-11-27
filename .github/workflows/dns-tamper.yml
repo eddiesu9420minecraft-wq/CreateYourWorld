@@ -1,0 +1,49 @@
+# Poisons the runner's system DNS (hosts file) for GitHub, then proves Pikara Secure Network
+# still resolves via DoH, keeps TLS validation, and verifies the signed update.json.
+name: dns-tamper
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+env:
+  PIKARA_TAMPERED_IP: 10.255.255.1
+
+jobs:
+  tamper:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: crates/pikara-secure }
+      # Build first: once DNS is poisoned, cargo itself can no longer reach crates.io.
+      - name: Build test binary
+        run: cargo test --manifest-path crates/pikara-secure/Cargo.toml --test dns_tamper --no-run
+      - name: Poison system DNS (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          for h in api.github.com raw.githubusercontent.com github.com objects.githubusercontent.com release-assets.githubusercontent.com; do
+            echo "$PIKARA_TAMPERED_IP $h" | sudo tee -a /etc/hosts
+          done
+          if [ "$RUNNER_OS" = "macOS" ]; then sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder || true; fi
+      - name: Poison system DNS (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          foreach ($h in "api.github.com","raw.githubusercontent.com","github.com","objects.githubusercontent.com","release-assets.githubusercontent.com") {
+            Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "$env:PIKARA_TAMPERED_IP $h"
+          }
+          ipconfig /flushdns
+      - name: Updates still verified via DoH
+        run: cargo test --offline --manifest-path crates/pikara-secure/Cargo.toml --test dns_tamper -- --ignored --nocapture
