@@ -253,6 +253,7 @@ fn log(plan: &ApplyPlan, msg: &str) {
     }
 }
 
+#[cfg(windows)]
 fn copy_dir(src: &Path, dst: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(dst)?;
     for e in std::fs::read_dir(src)? {
