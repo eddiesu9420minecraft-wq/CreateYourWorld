@@ -45,11 +45,13 @@ export interface JobInfo {
 export interface InstallOutcome { jobId: number | null; switchedTo: string | null; deferred: boolean }
 
 export type UpdateMode = "auto" | "notify" | "manual";
+export type UiMotion = "system" | "on" | "off";
 
 export interface Settings {
   maxConcurrentDownloads: number; keepPreviousVersions: number; launchAfterInstall: boolean;
   defaultChannel: Channel; channels: Record<string, Channel>;
   selfUpdateMode: UpdateMode; appsUpdateMode: UpdateMode;
+  uiMotion: UiMotion;
 }
 
 export interface SelfUpdateStatus {

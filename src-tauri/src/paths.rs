@@ -16,6 +16,12 @@ pub struct Paths {
 
 impl Paths {
     pub fn resolve(app: &AppHandle) -> anyhow::Result<Self> {
+        // Tests (and only tests) can point CYW at an isolated, empty data folder so they never
+        // read or modify the user's real installed apps, settings or downloads.
+        if let Some(dir) = std::env::var_os("PIKARA_CYW_DATA_DIR").filter(|d| !d.is_empty()) {
+            let data = PathBuf::from(dir);
+            return Ok(Self { downloads: data.join("downloads"), apps: data.join("apps"), runtimes: data.join("runtimes"), cache: data.join("cache"), data });
+        }
         let data = app.path().app_local_data_dir()?;
         let mut cache = app.path().app_cache_dir()?;
         if cache == data {

@@ -1,0 +1,119 @@
+/* ------------------------------------------------------------------------------------
+   Motion tokens + CSS-driven micro-interactions. Values mirror src/motion/tokens.ts.
+   Only transform / opacity (and colours on hover) are animated — never layout.
+   Nothing here runs while the UI is idle: every animation is tied to a state change,
+   and the only looping ones (spinner, indeterminate bar) exist only while work runs.
+   ------------------------------------------------------------------------------------ */
+:root {
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Animations off: explicit setting, or "follow system" + OS reduce-motion. */
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-motion="system"] *,
+  html[data-motion="system"] *::before,
+  html[data-motion="system"] *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Buttons: hover colour + press feedback (scale is compositor-only). */
+.btn,
+.icon-btn,
+.nav-item,
+.stat {
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.btn:not(:disabled):active,
+.icon-btn:not(:disabled):active,
+.stat:active {
+  transform: scale(0.97);
+}
+.nav-item:active {
+  transform: scale(0.985);
+}
+.btn:focus-visible,
+.icon-btn:focus-visible,
+.nav-item:focus-visible {
+  outline: 2px solid rgba(245, 179, 1, 0.55);
+  outline-offset: 2px;
+}
+
+/* Sidebar: the gold pill is a separate layer that glides between items (Motion layoutId). */
+.nav-item {
+  position: relative;
+  isolation: isolate;
+}
+.nav-item.active {
+  background: transparent;
+}
+.nav-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 8px;
+  background: var(--gold-dim);
+}
+
+/* Cards: gentle lift on hover. */
+.product-card,
+.backend,
+.release {
+  transition:
+    border-color var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+.product-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Progress: animate scaleX instead of width (no layout per frame). */
+.progress-fill {
+  width: 100%;
+  transform-origin: left center;
+  transition: transform 300ms var(--ease-out);
+  will-change: transform;
+}
+.progress-indeterminate .progress-fill {
+  width: 35%;
+  transition: none;
+}
+
+/* Inputs */
+.search,
+select {
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+
+/* Modal and toast entrance/exit are handled by Motion; disable the old CSS keyframes. */
+.modal-backdrop,
+.toast {
+  animation: none;
+}
+
+/* Stagger wrappers are grid/list children; let the card inside fill them. */
+.stagger-item > .card,
+.stagger-item > .stat {
+  height: 100%;
+  width: 100%;
+}

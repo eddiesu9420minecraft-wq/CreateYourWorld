@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { formatBytes, type Check, type JobInfo, type VerifyReport } from "../api";
 import { Icon } from "./Icon";
+import { AnimatePresence, MotionBackdrop, MotionPanel } from "../motion";
 
 export function Button({ children, onClick, kind = "secondary", disabled, icon, small, title }: {
   children?: ReactNode; onClick?: () => void; kind?: "primary" | "secondary" | "ghost" | "danger";
@@ -21,7 +22,7 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
 export function Progress({ value, indeterminate }: { value: number; indeterminate?: boolean }) {
   return (
     <div className={`progress${indeterminate ? " progress-indeterminate" : ""}`}>
-      <div className="progress-fill" style={{ width: indeterminate ? undefined : `${Math.max(0, Math.min(100, value))}%` }} />
+      <div className="progress-fill" style={indeterminate ? undefined : { transform: `scaleX(${Math.max(0, Math.min(100, value)) / 100})` }} />
     </div>
   );
 }
@@ -52,16 +53,16 @@ export function Modal({ title, children, onClose, footer, wide }: {
   title: ReactNode; children: ReactNode; onClose: () => void; footer?: ReactNode; wide?: boolean;
 }) {
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`modal${wide ? " modal-wide" : ""}`} role="dialog">
+    <MotionBackdrop className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <MotionPanel className={`modal${wide ? " modal-wide" : ""}`}>
         <div className="modal-head">
           <div className="modal-title">{title}</div>
           <button className="icon-btn" onClick={onClose} aria-label="關閉"><Icon name="close" /></button>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
-      </div>
-    </div>
+      </MotionPanel>
+    </MotionBackdrop>
   );
 }
 
@@ -70,14 +71,14 @@ export function useConfirm() {
   const ask = (title: string, body: ReactNode, confirm = "確定", danger = false) =>
     new Promise<boolean>((resolve) => setState({ title, body, confirm, danger, resolve }));
   const close = (v: boolean) => { state?.resolve(v); setState(null); };
-  const element = state && (
+  const element = <AnimatePresence>{state && (
     <Modal title={state.title} onClose={() => close(false)} footer={
       <>
         <Button kind="ghost" onClick={() => close(false)}>取消</Button>
         <Button kind={state.danger ? "danger" : "primary"} onClick={() => close(true)}>{state.confirm}</Button>
       </>
     }>{state.body}</Modal>
-  );
+  )}</AnimatePresence>;
   return { ask, element };
 }
 

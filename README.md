@@ -23,6 +23,8 @@ npm run tauri build
 
 `cargo test --manifest-path src-tauri/Cargo.toml` 執行 Rust 單元測試（版本頻道、資產選擇、校驗檔解析、安全解壓縮、安裝失敗回復）。
 
+> 測試時可設定 `PIKARA_CYW_DATA_DIR` 指向空的資料夾，CYW 就完全不會讀寫真實的應用程式資料。GUI 測試請透過 `tools/test/hidden-desktop/launch-hidden.ps1` 在看不見的桌面上執行。
+
 > 若專案放在很深的路徑下，MSVC 連結器可能因超過 260 字元失敗（LNK1104）。設定較短的 `CARGO_TARGET_DIR` 即可。
 
 ## 架構
@@ -39,6 +41,7 @@ npm run tauri build
 | `hub.rs` | 產品檢視、更新判斷、回復、解除安裝、啟動 |
 | `runtime.rs` | CUDA / AMD / Metal / CPU 後端偵測 |
 | `crates/pikara-secure` | **Pikara Secure Network**，所有 Pikara 軟體共用：DoH 解析、HTTPS 限定的用戶端、已簽章 update.json 的驗證、串流計算 SHA-256 與 minisign 驗證、內建的信任公鑰 |
+| `src/motion/` + `src/styles/motion.css` | UI 動畫系統：統一的動畫參數（時長、曲線、無彈跳的 spring）、可重用元件（頁面切換、Modal、Toast、卡片依序出場、側邊欄指示器）；只對 transform/opacity 做動畫，支援減少動態效果，設定中可關閉 |
 | `selfupdate.rs` | CYW 自身更新：已簽章的 update.json → 透過下載佇列下載 → 驗證 → 由輔助程序先備份、安裝、檢查新版本號，失敗時自動還原 |
 | `crates/pikara-splash` | **Pikara 統一啟動畫面**（Tauri 外掛＋不依賴框架的前端），所有 Pikara 軟體共用的單一來源；其他 repo 以 `sync.mjs` vendored。見該資料夾 README |
 

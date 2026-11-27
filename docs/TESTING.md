@@ -98,3 +98,23 @@
 - macOS 實機（DMG、`.app` 自身更新、Metal 與 Rosetta 偵測）。
 - 下一次真實更新時的重新啟動（0.1.2 → 0.1.3）。
 - P4 共用運行環境（尚未實作）。
+
+## 2026-11-27（夜間）· UI 動畫系統
+
+實作：`src/motion/`（統一的動畫參數與可重用元件，使用 Motion 搭配 LazyMotion；動畫功能另外拆成非同步 chunk）、`src/styles/motion.css`（Hover、點擊回饋、進度條、減少動態效果）。設定新增「介面動畫」：跟隨系統／開啟／關閉。
+
+測試方式：`tools/test/ui-motion.mjs`，透過 CDP 對看不見桌面上的測試程序（`launch-hidden.ps1`）量測。WebView2 使用獨立的資料夾（`WEBVIEW2_USER_DATA_FOLDER`）；隔離回歸測試另外設定 `PIKARA_CYW_DATA_DIR`。看不見的桌面上 rAF 不會被節流（實測 16.7 ms/幀），所以 FPS 數據是有效的。
+
+- 26/26 項檢查全部通過（在全新的測試程序上連續執行 2 次），原始數據在 `docs/ui-motion-report.json`：
+  - 7 個頁面都能正常顯示，側邊欄指示器跟著選取的項目移動。
+  - 頁面切換與 Modal 只對 `transform`/`opacity`（以及 Hover 顏色）做動畫。
+  - Modal 先播完退出動畫再移除；Toast 依類型停留 4 秒或 8 秒，退出後移除。
+  - 進度條以 `transform: scaleX` 驅動，不再對 width 做動畫。
+  - 「關閉動畫」時，沒有任何超過 1 ms 的動畫；設定可以正確還原。
+  - 沒有 JS 錯誤或 console 錯誤。
+- 頁面切換：7 個頁面平均都是 16.7 ms/幀，最差 16.9 ms（60 FPS）。第一版建置的第一次切換曾出現一個 266 ms 的幀，但改版後連續 2 次都沒有重現。
+- 閒置 10 秒：執行中的動畫為 0，主執行緒工作只有 15.7–18.8 ms（約 0.2%）。
+- Bundle：主程式 JS 從 178 KB 增加到 227 KB（gzip 58 → 75.6 KB），Motion 的功能另外放在 84 KB 的非同步 chunk；啟動畫面頁面不包含 Motion。
+- 功能回歸（隔離的資料目錄 `PIKARA_CYW_DATA_DIR`）：安裝 Studio v0.3.1 時 GitHub digest 與 SHA256SUMS 都通過、進度條 `scaleX(0 → 0.85)`、清除快取成功、解除安裝成功。Rust 測試 10/10 通過。
+- 發現：測試程序若在 Claude 容器內執行且沒有設定 `PIKARA_CYW_DATA_DIR`，仍然會讀到（而且可能寫入）使用者真實的 `installed.json`；在容器內清除快取也會遇到「重新分析點」錯誤，這是容器虛擬化造成的，在 D: 槽的隔離目錄中正常。因此測試一律使用隔離的資料目錄。確認過使用者真實的 settings.json 沒有被測試改動。
+- 尚未測試：macOS（Apple Silicon、Intel）實機上的動畫表現；Windows 上可見視窗的主觀流暢度（依使用者要求，本次沒有開啟可見視窗）。

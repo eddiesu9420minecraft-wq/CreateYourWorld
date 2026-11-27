@@ -4,9 +4,11 @@ import { useStore } from "../store";
 import { Icon } from "../components/Icon";
 import { Badge, Button, Empty, JobProgress, PageHeader, VerifyDetails } from "../components/ui";
 import { useNetworkStatusText } from "../components/SelfUpdateCard";
-import type { UpdateMode } from "../api";
+import type { UiMotion, UpdateMode } from "../api";
+import { StaggerItem } from "../motion";
 
 const MODE_LABEL: Record<UpdateMode, string> = { auto: "自動更新", notify: "僅通知", manual: "手動更新" };
+const MOTION_LABEL: Record<UiMotion, string> = { system: "跟隨系統", on: "開啟", off: "關閉" };
 
 function JobRow({ job }: { job: JobInfo }) {
   const { run } = useStore();
@@ -61,7 +63,7 @@ export function DownloadsPage() {
         actions={finished && <Button kind="ghost" onClick={() => run(() => api.clearFinished()).then(reloadJobs)}>清除已結束項目</Button>}
       />
       {sorted.length === 0 ? <Empty icon="downloads" title="下載佇列是空的" /> : (
-        <div className="card list">{sorted.map((j) => <JobRow key={j.id} job={j} />)}</div>
+        <div className="card list">{sorted.map((j, i) => <StaggerItem key={j.id} index={i} className="list-block"><JobRow job={j} /></StaggerItem>)}</div>
       )}
     </div>
   );
@@ -162,6 +164,16 @@ export function SettingsPage() {
           <div><b>已安裝的應用程式</b><div className="small muted">啟動時檢查一次，之後每 60 分鐘檢查一次。正在執行的應用程式不會被關閉，會等你關閉後再更新。</div></div>
           <select value={settings.appsUpdateMode} onChange={(e) => update({ appsUpdateMode: e.target.value as UpdateMode })}>
             {(Object.keys(MODE_LABEL) as UpdateMode[]).map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="section-title">介面</div>
+      <div className="card form">
+        <div className="form-row">
+          <div><b>介面動畫</b><div className="small muted">「跟隨系統」會在系統開啟「減少動態效果」時自動關閉動畫。關閉後，所有轉場與動畫都會直接完成。</div></div>
+          <select value={settings.uiMotion ?? "system"} onChange={(e) => update({ uiMotion: e.target.value as UiMotion })}>
+            {(Object.keys(MOTION_LABEL) as UiMotion[]).map((m) => <option key={m} value={m}>{MOTION_LABEL[m]}</option>)}
           </select>
         </div>
       </div>

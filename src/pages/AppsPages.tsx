@@ -7,6 +7,7 @@ import { Badge, Button, Empty, PageHeader, VerifyBadges, VerifyDetails, useConfi
 import type { Page } from "../App";
 import { useState } from "react";
 import { SelfUpdateCard } from "../components/SelfUpdateCard";
+import { StaggerItem } from "../motion";
 
 function matches(p: ProductView, q: string) {
   if (!q) return true;
@@ -41,15 +42,16 @@ export function HomePage({ go, onOpen }: { go: (p: Page) => void; onOpen: (id: s
       </section>
 
       <div className="stats">
-        <button className="stat" onClick={() => go("installed")}><span className="stat-num">{installed}</span><span className="muted">已安裝</span></button>
-        <button className="stat" onClick={() => go("updates")}><span className="stat-num">{updates}</span><span className="muted">可更新</span></button>
-        <button className="stat" onClick={() => go("downloads")}><span className="stat-num">{active}</span><span className="muted">下載中</span></button>
-        <button className="stat" onClick={() => go("apps")}><span className="stat-num">{products.length}</span><span className="muted">產品</span></button>
+        {([["installed", installed, "已安裝"], ["updates", updates, "可更新"], ["downloads", active, "下載中"], ["apps", products.length, "產品"]] as const).map(([to, n, label], i) => (
+          <StaggerItem key={to} index={i} className="stagger-item">
+            <button className="stat" onClick={() => go(to)}><span className="stat-num">{n}</span><span className="muted">{label}</span></button>
+          </StaggerItem>
+        ))}
       </div>
 
       <div className="section-title">精選應用程式</div>
       <div className="grid">
-        {featured.map((p) => <ProductCard key={p.id} p={p} onOpen={() => onOpen(p.id)} />)}
+        {featured.map((p, i) => <StaggerItem key={p.id} index={i + 4} className="stagger-item"><ProductCard p={p} onOpen={() => onOpen(p.id)} /></StaggerItem>)}
         {featured.length === 0 && <Empty icon="apps" title="尚無已發布的產品" />}
       </div>
 
@@ -81,7 +83,7 @@ export function AllAppsPage({ query, onOpen }: { query: string; onOpen: (id: str
     <div className="page">
       <PageHeader title="所有應用程式" subtitle="版本與下載檔案均即時取自各產品的 GitHub Releases。" />
       {list.length === 0 ? <Empty icon="search" title="找不到符合的應用程式" /> : (
-        <div className="grid">{list.map((p) => <ProductCard key={p.id} p={p} onOpen={() => onOpen(p.id)} />)}</div>
+        <div className="grid">{list.map((p, i) => <StaggerItem key={p.id} index={i} className="stagger-item"><ProductCard p={p} onOpen={() => onOpen(p.id)} /></StaggerItem>)}</div>
       )}
     </div>
   );

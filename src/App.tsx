@@ -3,6 +3,7 @@ import { ACTIVE_STATES, ARCH_LABEL, OS_LABEL } from "./api";
 import { PikaraLogo, RevealOverlay } from "@pikara/splash";
 import { MAIN_BACKGROUND, splashBridge, transport } from "./splash";
 import { StoreProvider, useStore } from "./store";
+import { AnimatePresence, MotionProvider, MotionToast, PageTransition, SPRING, motion, useMotionOff } from "./motion";
 import { Icon } from "./components/Icon";
 import { ProductDetail } from "./components/Product";
 import { AllAppsPage, HomePage, InstalledPage, UpdatesPage } from "./pages/AppsPages";
@@ -20,7 +21,17 @@ const NAV: { id: Page; label: string; icon: string }[] = [
 ];
 
 function Shell() {
+  const { settings } = useStore();
+  return (
+    <MotionProvider mode={settings?.uiMotion ?? "system"}>
+      <ShellInner />
+    </MotionProvider>
+  );
+}
+
+function ShellInner() {
   const { products, jobs, info, loading, refresh, toasts, dismissToast } = useStore();
+  const indicator = useMotionOff() ? { duration: 0 } : SPRING;
   const [page, setPage] = useState<Page>("home");
   const [query, setQuery] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -51,6 +62,7 @@ function Shell() {
         <nav>
           {NAV.map((n) => (
             <button key={n.id} className={`nav-item${page === n.id ? " active" : ""}`} onClick={() => go(n.id)}>
+              {page === n.id && <motion.span layoutId="nav-indicator" className="nav-indicator" transition={indicator} />}
               <Icon name={n.icon} />
               <span>{n.label}</span>
               {!!counts[n.id] && <span className={`nav-count${n.id === "updates" ? " gold" : ""}`}>{counts[n.id]}</span>}
@@ -59,6 +71,7 @@ function Shell() {
         </nav>
         <div className="grow" />
         <button className={`nav-item${page === "settings" ? " active" : ""}`} onClick={() => go("settings")}>
+          {page === "settings" && <motion.span layoutId="nav-indicator" className="nav-indicator" transition={indicator} />}
           <Icon name="settings" />
           <span>設定</span>
         </button>
@@ -80,21 +93,25 @@ function Shell() {
           </button>
         </header>
         <main className="scroll">
-          {page === "home" && <HomePage go={go} onOpen={setDetailId} />}
-          {page === "apps" && <AllAppsPage query={query} onOpen={setDetailId} />}
-          {page === "installed" && <InstalledPage query={query} onOpen={setDetailId} />}
-          {page === "updates" && <UpdatesPage onOpen={setDetailId} />}
-          {page === "downloads" && <DownloadsPage />}
-          {page === "runtime" && <RuntimePage />}
-          {page === "settings" && <SettingsPage />}
+          <PageTransition id={page}>
+            {page === "home" && <HomePage go={go} onOpen={setDetailId} />}
+            {page === "apps" && <AllAppsPage query={query} onOpen={setDetailId} />}
+            {page === "installed" && <InstalledPage query={query} onOpen={setDetailId} />}
+            {page === "updates" && <UpdatesPage onOpen={setDetailId} />}
+            {page === "downloads" && <DownloadsPage />}
+            {page === "runtime" && <RuntimePage />}
+            {page === "settings" && <SettingsPage />}
+          </PageTransition>
         </main>
       </div>
 
-      {detail && <ProductDetail p={detail} onClose={() => setDetailId(null)} />}
+      <AnimatePresence>{detail && <ProductDetail key={detail.id} p={detail} onClose={() => setDetailId(null)} />}</AnimatePresence>
       <div className="toasts">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast toast-${t.kind}`} onClick={() => dismissToast(t.id)}>{t.text}</div>
-        ))}
+        <AnimatePresence initial={false}>
+          {toasts.map((t) => (
+            <MotionToast key={t.id} className={`toast toast-${t.kind}`} onClick={() => dismissToast(t.id)}>{t.text}</MotionToast>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

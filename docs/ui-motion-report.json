@@ -1,0 +1,278 @@
+{
+ "passed": 26,
+ "failed": 0,
+ "checks": [
+  {
+   "name": "page 所有應用程式: renders, indicator on active item",
+   "pass": true,
+   "detail": {
+    "contentChars": 200
+   }
+  },
+  {
+   "name": "page 所有應用程式: only compositor-friendly properties animated",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "color",
+     "opacity"
+    ],
+    "bad": []
+   }
+  },
+  {
+   "name": "page 已安裝應用程式: renders, indicator on active item",
+   "pass": true,
+   "detail": {
+    "contentChars": 135
+   }
+  },
+  {
+   "name": "page 已安裝應用程式: only compositor-friendly properties animated",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "color",
+     "opacity"
+    ],
+    "bad": []
+   }
+  },
+  {
+   "name": "page 更新管理: renders, indicator on active item",
+   "pass": true,
+   "detail": {
+    "contentChars": 127
+   }
+  },
+  {
+   "name": "page 更新管理: only compositor-friendly properties animated",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "color",
+     "opacity"
+    ],
+    "bad": []
+   }
+  },
+  {
+   "name": "page 下載管理: renders, indicator on active item",
+   "pass": true,
+   "detail": {
+    "contentChars": 404
+   }
+  },
+  {
+   "name": "page 下載管理: only compositor-friendly properties animated",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "color",
+     "opacity"
+    ],
+    "bad": []
+   }
+  },
+  {
+   "name": "page 共用運行環境: renders, indicator on active item",
+   "pass": true,
+   "detail": {
+    "contentChars": 390
+   }
+  },
+  {
+   "name": "page 共用運行環境: only compositor-friendly properties animated",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "color",
+     "opacity"
+    ],
+    "bad": []
+   }
+  },
+  {
+   "name": "page 設定: renders, indicator on active item",
+   "pass": true,
+   "detail": {
+    "contentChars": 1054
+   }
+  },
+  {
+   "name": "page 設定: only compositor-friendly properties animated",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "color",
+     "opacity"
+    ],
+    "bad": []
+   }
+  },
+  {
+   "name": "page 首頁: renders, indicator on active item",
+   "pass": true,
+   "detail": {
+    "contentChars": 401
+   }
+  },
+  {
+   "name": "page 首頁: only compositor-friendly properties animated",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "color",
+     "opacity"
+    ],
+    "bad": []
+   }
+  },
+  {
+   "name": "modal opens",
+   "pass": true
+  },
+  {
+   "name": "modal animates only transform/opacity",
+   "pass": true,
+   "detail": {
+    "animated": [
+     "opacity"
+    ]
+   }
+  },
+  {
+   "name": "modal exit animation then unmount",
+   "pass": true,
+   "detail": {
+    "presentDuringExit": true
+   }
+  },
+  {
+   "name": "toast shown",
+   "pass": true,
+   "detail": {
+    "kind": "toast toast-error",
+    "text": "物件管理員在抓取物件時發現重新分析點。 (os error 4395)"
+   }
+  },
+  {
+   "name": "toast removed after its timeout (with exit animation)",
+   "pass": true
+  },
+  {
+   "name": "progress fill transitions transform (not width)",
+   "pass": true,
+   "detail": {
+    "transition": "transform",
+    "origin": "0px 2px"
+   }
+  },
+  {
+   "name": "idle: no running animations",
+   "pass": true,
+   "detail": {
+    "seconds": 10,
+    "taskMs": 15.7,
+    "scriptMs": 0,
+    "runningAnimations": 0
+   }
+  },
+  {
+   "name": "idle: main-thread work < 1% over 10 s",
+   "pass": true,
+   "detail": {
+    "seconds": 10,
+    "taskMs": 15.7,
+    "scriptMs": 0,
+    "runningAnimations": 0
+   }
+  },
+  {
+   "name": "setting off → html[data-motion=off]",
+   "pass": true
+  },
+  {
+   "name": "animations off: nothing longer than 1 ms runs",
+   "pass": true,
+   "detail": {
+    "animations": 13,
+    "long": []
+   }
+  },
+  {
+   "name": "setting restored",
+   "pass": true
+  },
+  {
+   "name": "no JS errors or console errors",
+   "pass": true,
+   "detail": []
+  }
+ ],
+ "errors": [],
+ "transitions": [
+  {
+   "page": "所有應用程式",
+   "frames": 33,
+   "avgFrameMs": 16.7,
+   "maxFrameMs": 16.8,
+   "layouts": 5,
+   "animations": 5
+  },
+  {
+   "page": "已安裝應用程式",
+   "frames": 32,
+   "avgFrameMs": 16.7,
+   "maxFrameMs": 16.8,
+   "layouts": 6,
+   "animations": 4
+  },
+  {
+   "page": "更新管理",
+   "frames": 32,
+   "avgFrameMs": 16.7,
+   "maxFrameMs": 16.9,
+   "layouts": 5,
+   "animations": 4
+  },
+  {
+   "page": "下載管理",
+   "frames": 32,
+   "avgFrameMs": 16.7,
+   "maxFrameMs": 16.8,
+   "layouts": 9,
+   "animations": 8
+  },
+  {
+   "page": "共用運行環境",
+   "frames": 32,
+   "avgFrameMs": 16.7,
+   "maxFrameMs": 16.8,
+   "layouts": 7,
+   "animations": 4
+  },
+  {
+   "page": "設定",
+   "frames": 32,
+   "avgFrameMs": 16.7,
+   "maxFrameMs": 16.8,
+   "layouts": 22,
+   "animations": 4
+  },
+  {
+   "page": "首頁",
+   "frames": 32,
+   "avgFrameMs": 16.7,
+   "maxFrameMs": 16.8,
+   "layouts": 17,
+   "animations": 9
+  }
+ ],
+ "idle": {
+  "seconds": 10,
+  "taskMs": 15.7,
+  "scriptMs": 0,
+  "runningAnimations": 0
+ }
+}

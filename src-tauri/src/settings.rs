@@ -16,6 +16,17 @@ pub enum UpdateMode {
     Manual,
 }
 
+/// UI animation preference.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum UiMotion {
+    /// Follow the OS "reduce motion" setting.
+    #[default]
+    System,
+    On,
+    Off,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
@@ -29,6 +40,7 @@ pub struct Settings {
     pub channels: BTreeMap<String, Channel>,
     pub self_update_mode: UpdateMode,
     pub apps_update_mode: UpdateMode,
+    pub ui_motion: UiMotion,
 }
 
 impl Default for Settings {
@@ -41,6 +53,7 @@ impl Default for Settings {
             channels: BTreeMap::new(),
             self_update_mode: UpdateMode::Notify,
             apps_update_mode: UpdateMode::Notify,
+            ui_motion: UiMotion::System,
         }
     }
 }

@@ -4,6 +4,7 @@ import "@fontsource/noto-sans-tc/400.css";
 import "@fontsource/noto-sans-tc/500.css";
 import "@fontsource/noto-sans-tc/700.css";
 import "./styles/theme.css";
+import "./styles/motion.css";
 import "../crates/pikara-splash/web/splash.css";
 import { App } from "./App";
 
