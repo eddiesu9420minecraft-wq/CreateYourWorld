@@ -131,8 +131,10 @@ mod tests {
             assert!(r.is_err(), "{host} must fail TLS validation");
             println!("{host}: {}", describe(&r.unwrap_err()));
         }
-        // Control: a valid certificate on the same service works.
-        assert!(c.get("https://badssl.com/").send().await.unwrap().status().is_success());
+        // Control: the same client accepts a valid certificate. (badssl.com's own front page is often very slow,
+        // so the control uses GitHub's API; any HTTP answer — even 403 rate limited — means TLS validated.)
+        let ok = client(&["api.github.com"]).get("https://api.github.com/zen").send().await;
+        assert!(ok.is_ok(), "valid certificate must be accepted: {:?}", ok.err().map(|e| describe(&e)));
     }
 
     #[tokio::test]
