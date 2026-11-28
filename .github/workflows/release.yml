@@ -60,7 +60,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: "${{ matrix.target }}" }
       - uses: Swatinem/rust-cache@v2
-        with: { workspaces: "src-tauri\ncrates/pikara-secure", key: "${{ matrix.target }}" }
+        with: { workspaces: "src-tauri\ncrates/pikara-secure\ncrates/cyw-cli", key: "${{ matrix.target }}" }
       - run: npm ci
       - name: Build and sign
         shell: bash
@@ -106,8 +106,10 @@ jobs:
           VER="${{ needs.create.outputs.version }}"
           if [ "${{ runner.os }}" = macOS ] && [ "${{ matrix.target }}" = "$(rustc -vV | sed -n 's/host: //p')" ]; then
             out=$(src-tauri/target/${{ matrix.target }}/release/create-your-world --pikara-version); echo "$out"; [ "$out" = "$VER" ]
+            out=$(src-tauri/binaries/cyw-${{ matrix.target }} --pikara-version); echo "cyw $out"; [ "$out" = "$VER" ]
           elif [ "${{ runner.os }}" = Windows ]; then
             out=$(src-tauri/target/${{ matrix.target }}/release/create-your-world.exe --pikara-version | tr -d '\r'); echo "$out"; [ "$out" = "$VER" ]
+            out=$(src-tauri/binaries/cyw-${{ matrix.target }}.exe --pikara-version | tr -d '\r'); echo "cyw $out"; [ "$out" = "$VER" ]
           else echo "cross-compiled target: not executed on this runner"; fi
       - name: Upload to draft release
         shell: bash

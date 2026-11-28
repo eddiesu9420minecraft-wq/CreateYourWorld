@@ -5,3 +5,4 @@
 update.json -text
 *.sig -text
 crates/pikara-secure/tests/fixtures/** -text
+crates/cyw-core/tests/fixtures/** -text

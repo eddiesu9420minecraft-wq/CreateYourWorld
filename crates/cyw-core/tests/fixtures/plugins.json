@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "software": "runX",
+  "plugins": [
+    {
+      "id": "runX-Examples",
+      "name": "runX 範例程式",
+      "description": "runX 官方範例程式（.rux），安裝後放在外掛資料夾的 examples/",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "url": "https://github.com/eddiesu9420minecraft-wq/runX/releases/download/v0.1.0-alpha/runX-plugin-Examples-1.0.0.zip",
+          "sha256": "6aa802e20f153ddf6814ad26d8ef47b277fa4e4b46a0689d63d45650bf467db2",
+          "size": 3212,
+          "permissions": [
+            "files:plugin"
+          ],
+          "requires": ">=0.1.0-alpha"
+        },
+        {
+          "version": "1.1.0",
+          "url": "https://github.com/eddiesu9420minecraft-wq/runX/releases/download/v0.1.0-alpha/runX-plugin-Examples-1.1.0.zip",
+          "sha256": "2fb782aa6c843d4643bb7360eadd2902c2d40eee812967323e500a9e60633391",
+          "size": 3561,
+          "permissions": [
+            "files:plugin"
+          ],
+          "requires": ">=0.1.0-alpha"
+        }
+      ]
+    },
+    {
+      "id": "runX-Tutorial",
+      "name": "runX 語法教學",
+      "description": "離線版語法教學與 CLI 文件（繁中／英文）",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "url": "https://github.com/eddiesu9420minecraft-wq/runX/releases/download/v0.1.0-alpha/runX-plugin-Tutorial-1.0.0.zip",
+          "sha256": "791694c810cedc9096ee0f861717dec36db06775c2a1a438a7b715bc77c9ceb3",
+          "size": 8181,
+          "permissions": [
+            "files:plugin"
+          ],
+          "requires": ">=0.1.0-alpha",
+          "dependencies": {
+            "runX-Examples": "^1.1"
+          }
+        }
+      ]
+    }
+  ]
+}

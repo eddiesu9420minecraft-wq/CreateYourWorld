@@ -139,3 +139,62 @@
   - 使用者真實 PATH 的寫入：程式碼路徑相同，只是換了機碼名稱。
   - macOS／Linux 的 `~/.local/bin` 符號連結。
   - 本次沒有發布新版 CYW：使用者目前的 CYW v0.1.2-alpha 不含這些功能。
+
+## 2026-11-28 cyw 命令列、共用核心、外掛管理
+
+架構：
+- 原本在 `src-tauri` 的核心模組移到 `crates/cyw-core`，不依賴 Tauri。視窗透過 `Host` trait（事件與工作排程）使用核心。
+- 新增 `crates/cyw-cli`（`cyw`）。
+- 套件名稱改為完整產品名稱，並以 legacyIds 遷移舊紀錄。
+- 新增跨程序鎖。
+
+自動測試（本機 Windows x64）：
+- cyw-core 22 項通過：
+  - 跨程序鎖競爭、舊 ID 遷移（不搬資料夾）、名稱唯一、啟動器拒絕腳本、PATH 循環；
+  - 外掛：相依解析、相容、衝突、循環、防止降級破壞相依、惡意索引；
+  - 已發布 runX 外掛索引的簽章：有效、改 1 byte 被拒、軟體名稱不符被拒、空白或亂碼簽章被拒；
+  - 既有的安裝、更新失敗保留舊版與解壓安全測試。
+- cyw-cli 16 項通過：6 項單元（簡寫轉換、語系、結束碼分類、clap 定義）＋ 10 項整合（真實 `cyw` 執行檔＋隔離資料夾），含網路測試：
+  - 下載 runX（簽章 passed）；
+  - `run`／`/run` 傳參數，結束碼原樣傳回（runxc 的 2）；字串不經 Shell，不會被注入；
+  - 外掛先裝相依，且拒絕破壞相依的降級；
+  - `remove` 在非 TTY 沒有 `--yes` 時回傳 2，有 `--yes` 才移除。
+- GUI：`ui-motion.mjs` 26/26 通過；Rust 版本一致測試通過。
+
+實際指令（隔離資料夾 `D:\t\cyw-cli-test`，PATH 寫入測試用登錄機碼）：
+- `cyw -V`、`-h`、`-m list software`（GitHub 真實資料，DoH）、`list installed`、`--json`。
+- `download runx`：約 2 秒，SHA-256、GitHub digest、簽章都通過。`RUNX` 不分大小寫；`studio`、`pikarastudio` 被拒絕，結束碼 3。
+- `download PikaraScienceStudio`：21.2 MB，9–13 MB/s。
+  - Studio 在產品目錄沒有設定簽章公鑰，所以只有 SHA-256＋GitHub digest＋SHA256SUMS，簽章顯示 not-configured。這是既有狀況。
+- `/run`、`-r`、`run`：
+  - runX 參數與結束碼都正確；
+  - `/run PikaraScienceStudio -- --cli build-info` 等待並輸出 Studio 的 JSON；
+  - `run … --detach` 0.1 秒返回 PID；
+  - 未安裝時提示 `cyw download PikaraScienceStudio`，結束碼 3。
+- `update --all`、`rollback`（沒有舊版時正確報錯）、`path add/remove`、`remove`（沒有 `--yes` 回傳 2）、`doctor`（11 項通過，含 DoH：api.github.com 經 Cloudflare 解析）。
+- `-m list V`、`-m update` 與 `-m update v3.0.1`：開發版本正確回報「不是安裝版」；安裝版的實際自我更新見「未完成」。
+- 補全：PowerShell 43 KB、Bash 39 KB、Zsh 34 KB。
+- 兩個 `cyw` 同時安裝 runX：一個成功，另一個因產品鎖得到結束碼 6。
+  - 第一次測試時第二個程序是因為共用的 CLI 下載紀錄被擋下，不是產品鎖，而且當機的程序會留下永久擋住的紀錄。已改為每個程序各自的暫存紀錄，修正後確認是由產品鎖擋下。
+- 外掛（runX 的真實簽章索引）：
+  - `list plugins`、`--dry-run`、安裝（先裝 runX-Examples 再裝 runX-Tutorial）、`enabled.json`；
+  - 移除被相依的外掛被拒；指定 1.0.0；不帶 `-m` 自動判斷所屬軟體；
+  - `rollback`、`disable`／`enable`、`update --all`、`remove`。
+  - 發現並修正：原本可以把 runX-Examples 降到 1.0.0，或回復到 1.0.0，而已啟用的 runX-Tutorial 需要 ^1.1。現在會拒絕。
+  - 發現並修正：索引驗證的暫存檔在同一程序並行時會互相覆寫（安全測試並行時失敗），改為每次呼叫使用唯一名稱。
+- 視窗與 CLI 共用：
+  - 用舊格式資料（`pikara-science-studio`）啟動新版視窗：installed.json 與頻道設定都遷移成 `PikaraScienceStudio`，安裝資料夾不變，沒有重新下載；視窗顯示已安裝 v0.3.4、沒有誤報更新。
+  - 視窗執行中用 `cyw` 安裝 runX，視窗立刻看到；視窗解除安裝後 `cyw list installed` 也看不到；installed.json 保持有效。
+- 安裝程式：
+  - NSIS 腳本把 `cyw.exe` 裝在 `$INSTDIR`、解除安裝時刪除，PATH 掛鉤都已編入。
+  - 掛鉤指令 `--pikara-path-self add/remove` 在容器外對測試機碼執行：新增、重複新增（冪等）、移除都正確。
+  - **沒有實際執行安裝程式**：會覆寫使用者真實 CYW 的解除安裝項目與捷徑。
+
+效能（本機，中位數）：`cyw -V` 49 ms、`list installed` 50 ms、`-m list software`（快取）111 ms；`cyw.exe` 9.7 MB。
+
+未完成／未驗證：
+- 安裝版的 `cyw -m update` 實際跨版本更新：要等下一個含 cyw 的版本發布後，才有更新的版本可以測試。更新使用的 helper 與 0.1.0→0.1.2 實測的是同一套。
+- 實際 SSH 登入、斷線重連與 Worker：需要可以登入的 SSH 主機。
+- CYW 視窗的外掛頁面。
+- macOS／Linux 的 PATH（安裝程式掛鉤只在 Windows）。
+- 核心的錯誤訊息只有繁體中文。

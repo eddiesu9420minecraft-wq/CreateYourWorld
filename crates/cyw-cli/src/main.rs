@@ -191,6 +191,19 @@ fn main() {
             println!("{}", cyw_core::VERSION);
             std::process::exit(0);
         }
+        // installer / uninstaller hook: put the folder holding cyw on the user PATH, or take it off
+        Some("--pikara-path-self") => {
+            let dir = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf()));
+            let r = match (dir, raw.get(2).and_then(|a| a.to_str())) {
+                (Some(d), Some("add")) => cyw_core::cli_path::add_to_user_path(&d),
+                (Some(d), Some("remove")) => cyw_core::cli_path::remove_from_user_path(&d),
+                _ => Err(std::io::Error::other("usage: --pikara-path-self add|remove")),
+            };
+            if let Err(e) = &r {
+                eprintln!("{e}");
+            }
+            std::process::exit(if r.is_ok() { 0 } else { 1 });
+        }
         Some("--pikara-apply-update") => {
             let code = raw.get(2).map(|p| cyw_core::selfupdate::run_helper(std::path::Path::new(p))).unwrap_or(2);
             std::process::exit(code);

@@ -30,6 +30,8 @@ jobs:
       # Build first: once DNS is poisoned, cargo itself can no longer reach crates.io.
       - name: Build test binary
         run: cargo test --manifest-path crates/pikara-secure/Cargo.toml --test dns_tamper --no-run
+      - name: Build cyw
+        run: cargo build --release --manifest-path crates/cyw-cli/Cargo.toml
       - name: Poison system DNS (Linux / macOS)
         if: runner.os != 'Windows'
         run: |
@@ -47,3 +49,13 @@ jobs:
           ipconfig /flushdns
       - name: Updates still verified via DoH
         run: cargo test --offline --manifest-path crates/pikara-secure/Cargo.toml --test dns_tamper -- --ignored --nocapture
+      - name: cyw downloads, verifies and runs runX with system DNS poisoned
+        shell: bash
+        env: { PIKARA_CYW_DATA_DIR: "${{ runner.temp }}/cyw-dns", NO_COLOR: "1" }
+        run: |
+          set -e
+          cyw=crates/cyw-cli/target/release/cyw; [ -f "$cyw.exe" ] && cyw="$cyw.exe"
+          "$cyw" doctor
+          "$cyw" --json download runX > out.json; cat out.json
+          grep -q '"status": "passed"' out.json
+          "$cyw" run runX -- --version

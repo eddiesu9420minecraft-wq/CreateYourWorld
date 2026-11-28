@@ -150,7 +150,10 @@ pub fn validate(index: &Index, software: &str) -> anyhow::Result<()> {
 /// Verify the signature of an index document with the compiled-in Pikara key, then parse and validate it.
 pub fn verify_index(bytes: &[u8], sig: &str, software: &str, pubkey: &str, scratch: &Path) -> anyhow::Result<Index> {
     std::fs::create_dir_all(scratch)?;
-    let tmp = scratch.join(format!("index-{}-{}.json", crate::util::sanitize_component(software), std::process::id()));
+    // unique per call: concurrent verifications in one process must not share a temp file
+    static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let tmp = scratch.join(format!("index-{}-{}-{n}.json", crate::util::sanitize_component(software), std::process::id()));
     std::fs::write(&tmp, bytes)?;
     let sha = hex::encode(Sha256::digest(bytes));
     let r = pikara_secure::artifact::verify_file(&tmp, &sha, sig, pubkey);
@@ -272,6 +275,12 @@ pub fn plan(index: &Index, db: &PluginDb, software_ver: Option<&semver::Version>
         Ok(())
     }
     visit(index, &installed, software_ver, id, None, version, &mut out, &mut visiting)?;
+    // enabled plugins that depend on a plugin in the plan must still be satisfied (no silent downgrade)
+    for s in &out {
+        if let Some(by) = broken_dependent(index, &installed, &s.id, &s.version) {
+            bail!("{by}；不會安裝 {} {}", s.id, s.version);
+        }
+    }
     // conflicts, both directions, against enabled plugins and the rest of the plan
     for s in &out {
         let v = index.plugins.iter().find(|p| p.id == s.id).and_then(|p| p.versions.iter().find(|v| v.version == s.version)).unwrap();
@@ -288,6 +297,20 @@ pub fn plan(index: &Index, db: &PluginDb, software_ver: Option<&semver::Version>
         }
     }
     Ok(out)
+}
+
+/// Would putting `id` at `version` break an enabled plugin that depends on it? Returns the reason.
+fn broken_dependent(index: &Index, installed: &BTreeMap<String, InstalledPlugin>, id: &str, version: &str) -> Option<String> {
+    let ver = parse_ver(version).ok()?;
+    for p in installed.values().filter(|p| p.enabled && !p.id.eq_ignore_ascii_case(id)) {
+        let deps = index.plugins.iter().find(|e| e.id.eq_ignore_ascii_case(&p.id)).and_then(|e| e.versions.iter().find(|v| v.version == p.current)).map(|v| v.dependencies.clone()).unwrap_or_default();
+        for (d, r) in deps {
+            if d.eq_ignore_ascii_case(id) && semver::VersionReq::parse(&r).is_ok_and(|r| !r.matches(&ver)) {
+                return Some(format!("已啟用的 {} {} 需要 {id} {r}", p.id, p.current));
+            }
+        }
+    }
+    None
 }
 
 /// Download, verify and install one plan step (into `<data>/plugins/<software>/<id>/<version>`).
@@ -383,9 +406,10 @@ pub fn set_enabled(core: &Core, software: &str, id: &str, enabled: bool) -> anyh
 }
 
 /// Switch to the previous installed version still on disk.
-pub fn rollback(core: &Core, software: &str, id: &str) -> anyhow::Result<String> {
+pub fn rollback(core: &Core, software: &str, id: &str, index: Option<&Index>) -> anyhow::Result<String> {
     modify_db(core, |db| {
         let root = plugin_root(core, software);
+        let snapshot = db.software.get(software).cloned().unwrap_or_default();
         let m = db.software.get_mut(software).ok_or_else(|| anyhow!("{software} 沒有已安裝的外掛"))?;
         let p = m.values_mut().find(|p| p.id.eq_ignore_ascii_case(id)).ok_or_else(|| anyhow!("{software} 沒有安裝外掛 {id}"))?;
         let cur = parse_ver(&p.current)?;
@@ -396,6 +420,9 @@ pub fn rollback(core: &Core, software: &str, id: &str) -> anyhow::Result<String>
             .max_by(|a, b| parse_ver(a).ok().cmp(&parse_ver(b).ok()))
             .cloned()
             .ok_or_else(|| anyhow!("{} 沒有可回復的舊版本", p.id))?;
+        if let Some(why) = index.and_then(|ix| broken_dependent(ix, &snapshot, &p.id, &prev)) {
+            bail!("{why}；不會回復到 {prev}");
+        }
         p.current = prev.clone();
         Ok(prev)
     })
@@ -464,6 +491,19 @@ mod tests {
         assert_eq!(plan(&index(), &PluginDb::default(), Some(&sw), "Core", Some("1.0.0")).unwrap()[0].version, "1.0.0");
         assert!(plan(&index(), &PluginDb::default(), Some(&sw), "Future", None).unwrap_err().to_string().contains("相容"));
         assert!(plan(&index(), &PluginDb::default(), None, "Extra", None).is_err(), "requires the software installed");
+    }
+
+    #[test]
+    fn dependents_are_not_broken_by_a_downgrade() {
+        let mut db = PluginDb::default();
+        let m = db.software.entry("runX".into()).or_default();
+        m.insert("Core".into(), InstalledPlugin { id: "Core".into(), current: "1.2.0".into(), versions: vec!["1.2.0".into()], enabled: true, permissions: vec![], sha256: String::new(), installed_at: 0 });
+        m.insert("Extra".into(), InstalledPlugin { id: "Extra".into(), current: "2.0.0".into(), versions: vec!["2.0.0".into()], enabled: true, permissions: vec![], sha256: String::new(), installed_at: 0 });
+        let e = plan(&index(), &db, None, "Core", Some("1.0.0")).unwrap_err().to_string();
+        assert!(e.contains("Extra") && e.contains("^1.1"), "{e}");
+        // disabled dependents don't block
+        db.software.get_mut("runX").unwrap().get_mut("Extra").unwrap().enabled = false;
+        assert!(plan(&index(), &db, None, "Core", Some("1.0.0")).is_ok());
     }
 
     #[test]

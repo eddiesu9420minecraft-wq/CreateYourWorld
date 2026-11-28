@@ -119,8 +119,8 @@ pub async fn run(core: &SharedCore, _app: &App, out: &Out, software: Option<Stri
         PluginCmd::Enable { name } => toggle(core, out, software, &name, true),
         PluginCmd::Disable { name } => toggle(core, out, software, &name, false),
         PluginCmd::Rollback { name } => {
-            let sw = core.product(&software.ok_or_else(|| anyhow!("請用 -m <軟體> 指定軟體"))?)?.id.clone();
-            let v = plugins::rollback(core, &sw, &name)?;
+            let (sw, ix) = index_for(core, &software.ok_or_else(|| anyhow!("請用 -m <軟體> 指定軟體"))?).await?;
+            let v = plugins::rollback(core, &sw, &name, Some(&ix))?;
             out.ok(&format!("{sw}: {name} 已回復到 {v}"));
             Ok((code::OK, json!({"software": sw, "plugin": name, "current": v})))
         }

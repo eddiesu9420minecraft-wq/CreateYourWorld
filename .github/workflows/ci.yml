@@ -23,7 +23,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-        with: { workspaces: "src-tauri\ncrates/pikara-secure" }
+        with: { workspaces: "src-tauri\ncrates/pikara-secure\ncrates/cyw-core\ncrates/cyw-cli" }
       - name: Linux WebKit deps
         if: runner.os == 'Linux'
         run: |
@@ -33,5 +33,12 @@ jobs:
       - run: npm run build
       - name: pikara-secure (offline + live security tests)
         run: cargo test --manifest-path crates/pikara-secure/Cargo.toml --lib --test attacks -- --include-ignored --nocapture
+      - name: cyw CLI sidecar (required by the app build)
+        run: node tools/build-cyw-sidecar.mjs
+      - name: cyw-core tests (lock, ids/migration, plugins, PATH, signed plugin index)
+        run: cargo test --manifest-path crates/cyw-core/Cargo.toml
+      - name: cyw CLI tests (real binary, isolated data; network tests download from GitHub)
+        env: { CYW_NET_TESTS: "1", GITHUB_TOKEN: "${{ github.token }}" }
+        run: cargo test --manifest-path crates/cyw-cli/Cargo.toml
       - name: CYW app tests
         run: cargo test --manifest-path src-tauri/Cargo.toml

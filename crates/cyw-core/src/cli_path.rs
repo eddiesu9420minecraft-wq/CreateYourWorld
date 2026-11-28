@@ -99,6 +99,16 @@ pub fn sync(paths: &Paths, catalog: &[Product], db: &InstalledDb) -> Vec<(String
     problems
 }
 
+/// Add a folder to the user PATH (installer: "put cyw on PATH").
+pub fn add_to_user_path(dir: &Path) -> std::io::Result<()> {
+    user_path::add_dir(dir)
+}
+
+/// Remove a folder from the user PATH (uninstaller).
+pub fn remove_from_user_path(dir: &Path) -> std::io::Result<()> {
+    user_path::remove_dir(dir)
+}
+
 /// Is `<data>/bin` registered in the user PATH?
 pub fn registered(paths: &Paths) -> bool {
     user_path::contains(&bin_dir(paths)).unwrap_or(false)
@@ -161,6 +171,14 @@ mod user_path {
         write(&key, &parts)
     }
 
+    pub fn add_dir(dir: &Path) -> std::io::Result<()> {
+        add(dir)
+    }
+
+    pub fn remove_dir(dir: &Path) -> std::io::Result<()> {
+        remove(dir)
+    }
+
     pub fn remove(dir: &Path) -> std::io::Result<()> {
         let (key, parts) = read()?;
         let kept: Vec<String> = parts.iter().filter(|p| !same_dir(p, dir)).cloned().collect();
@@ -176,6 +194,14 @@ mod user_path {
 #[cfg(not(windows))]
 mod user_path {
     use std::path::{Path, PathBuf};
+
+    pub fn add_dir(_dir: &Path) -> std::io::Result<()> {
+        Err(std::io::Error::other("on macOS / Linux add the folder to PATH in your shell profile"))
+    }
+
+    pub fn remove_dir(_dir: &Path) -> std::io::Result<()> {
+        Ok(())
+    }
 
     fn local_bin() -> Option<PathBuf> {
         std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local").join("bin"))

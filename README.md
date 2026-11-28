@@ -4,7 +4,24 @@
 
 Pikara 全家桶的官方軟體管理中心。永遠免費、無訂閱、無付費解鎖、無強制廣告。
 
-技術：Rust + Tauri 2、React + TypeScript、Vite。所有平台共用同一套前端與核心邏輯；路徑一律由 Tauri path API 依作業系統決定，沒有硬編碼的 Windows 路徑。
+技術：Rust + Tauri 2、React + TypeScript、Vite。架構分成三層：`crates/cyw-core`（下載、驗證、安裝、更新、PATH、外掛；不依賴視窗）、命令列 `cyw`（`crates/cyw-cli`）與 Tauri 視窗（`src-tauri` + `src`）。視窗與命令列共用同一個核心、資料庫與安裝資料夾；路徑依作業系統決定，沒有硬編碼的 Windows 路徑。
+
+## 命令列（cyw）
+
+```powershell
+cyw list software
+cyw download runX
+cyw /run PikaraScienceStudio
+cyw run runX -- main.rux -o main.exe
+cyw update --all
+cyw -m runX download runX-Tutorial -- install
+cyw doctor
+```
+
+- 不需要視窗、WebView 或 Node.js；可在 SSH、無桌面環境與 CI 使用（`--json`、`--yes`、結束碼、沒有終端機時不顯示進度動畫）。
+- 套件名稱是完整產品名稱（`PikaraScienceStudio`、`runX`），不分大小寫，沒有 `studio` 之類的別名。
+- 安全機制與視窗完全相同：DoH、只走 HTTPS、SHA-256、GitHub digest、Pikara 數位簽章、防降級、失敗自動還原。
+- 使用手冊：[docs/cli.md](docs/cli.md)；外掛規範：[docs/plugin-sdk.md](docs/plugin-sdk.md)；SSH 與遠端架構：[docs/remote.md](docs/remote.md)。
 
 ## 授權
 
