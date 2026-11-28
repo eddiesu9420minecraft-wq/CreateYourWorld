@@ -151,7 +151,15 @@ mod tests {
         const ONLY_API: &[&str] = &["api.github.com"];
         let c = client(ONLY_API);
         let r = c.get("https://api.github.com/repos/eddiesu9420minecraft-wq/PikaraScienceStudio/tarball").send().await;
-        assert!(r.is_err(), "redirect to codeload.github.com must be blocked");
-        println!("{}", describe(&r.unwrap_err()));
+        match r {
+            Err(e) => println!("blocked: {}", describe(&e)),
+            // GitHub answered without redirecting (e.g. 403/429 rate limit on a shared CI IP): nothing was followed,
+            // so the security property holds, but the redirect path was not exercised this time
+            Ok(resp) => {
+                assert_eq!(resp.url().host_str(), Some("api.github.com"), "a redirect to an unlisted host was followed");
+                assert!(!resp.status().is_success() && !resp.status().is_redirection(), "unexpected {}", resp.status());
+                println!("inconclusive: GitHub returned {} without a redirect (rate limited?)", resp.status());
+            }
+        }
     }
 }
