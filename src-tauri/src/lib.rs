@@ -1,5 +1,5 @@
 // The core (download, verification, install, update, PATH) is shared with the `cyw` CLI.
-use cyw_core::{downloads, github, hub, paths, platform, runtime, selfupdate, settings};
+use cyw_core::{downloads, feedback, github, hub, paths, platform, runtime, selfupdate, settings};
 use cyw_core::host::{App, BoxFuture, Host};
 
 /// Tauri as the core's host: events go to the WebView, tasks run on Tauri's runtime.
@@ -382,6 +382,128 @@ async fn network_status(core: State<'_, SharedCore>) -> Res<NetworkStatus> {
     })
 }
 
+
+// --------------------------------------------------------------- feedback ----
+// Feedback Center (docs/feedback/API.md). Creating feedback goes only through prepare → preview → submit.
+
+type SharedFeedback = Arc<feedback::Feedback>;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FeedbackProduct {
+    id: String,
+    name: String,
+    installed: Option<String>,
+}
+
+#[tauri::command]
+fn feedback_status(fb: State<'_, SharedFeedback>) -> feedback::Status {
+    fb.status()
+}
+
+#[tauri::command]
+fn feedback_products(core: State<'_, SharedCore>) -> Vec<FeedbackProduct> {
+    let mut v = vec![FeedbackProduct { id: feedback::SELF_PRODUCT.into(), name: "Create Your World".into(), installed: Some(cyw_core::VERSION.into()) }];
+    v.extend(core.catalog.iter().map(|p| FeedbackProduct { id: p.id.clone(), name: p.name.clone(), installed: core.installed_app(&p.id).map(|a| a.current) }));
+    v
+}
+
+/// GitHub device flow: returns the code to show; opens GitHub's device page in the browser.
+#[tauri::command]
+async fn feedback_sign_in_start(app: AppHandle, fb: State<'_, SharedFeedback>) -> Res<feedback::DeviceStart> {
+    let d = fb.device_start().await.map_err(|e| format!("{e:#}"))?;
+    let _ = app.opener().open_url(d.verification_uri.clone(), None::<&str>);
+    Ok(d)
+}
+
+#[tauri::command]
+async fn feedback_sign_in_poll(app: AppHandle, fb: State<'_, SharedFeedback>) -> Res<Option<serde_json::Value>> {
+    let r = fb.device_poll().await.map_err(|e| format!("{e:#}"))?;
+    if r.is_some() {
+        let _ = app.emit("feedback://session", ());
+    }
+    Ok(r)
+}
+
+/// Local development backend only (http://127.0.0.1, `ENVIRONMENT=development`); the backend refuses it otherwise.
+#[tauri::command]
+async fn feedback_dev_sign_in(app: AppHandle, fb: State<'_, SharedFeedback>, login: String, role: String) -> Res<serde_json::Value> {
+    let local = fb.status().base.is_some_and(|b| b.starts_with("http://127.0.0.1") || b.starts_with("http://localhost") || b.starts_with("http://[::1]"));
+    if !local {
+        return Err("開發登入只能用於本機反饋服務".into());
+    }
+    let u = fb.dev_sign_in(&login, &role).await.map_err(|e| format!("{e:#}"))?;
+    let _ = app.emit("feedback://session", ());
+    Ok(u)
+}
+
+#[tauri::command]
+async fn feedback_sign_out(app: AppHandle, fb: State<'_, SharedFeedback>) -> Res<()> {
+    fb.sign_out().await.map_err(err)?;
+    let _ = app.emit("feedback://session", ());
+    Ok(())
+}
+
+/// Redact + build the exact upload for the preview. Nothing is sent.
+#[tauri::command]
+fn feedback_prepare(core: State<'_, SharedCore>, fb: State<'_, SharedFeedback>, draft: feedback::Draft) -> Res<feedback::Preview> {
+    let env = feedback::environment(&core, &draft.product);
+    let diag = draft.include_diagnostics.then(|| feedback::diagnostics(&core));
+    fb.prepare(&draft, &feedback::products(&core), env, diag).map_err(|e| format!("{e:#}"))
+}
+
+/// Upload what the user confirmed (must be the previewed payload, identified by its SHA-256).
+#[tauri::command]
+async fn feedback_submit(fb: State<'_, SharedFeedback>, preview_id: String, confirmed_sha256: String) -> Res<feedback::SubmitResult> {
+    fb.submit(&preview_id, &confirmed_sha256).await.map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+fn feedback_discard(fb: State<'_, SharedFeedback>, preview_id: String) {
+    fb.discard(&preview_id)
+}
+
+#[tauri::command]
+async fn feedback_api(fb: State<'_, SharedFeedback>, method: String, path: String, query: Option<std::collections::BTreeMap<String, String>>, body: Option<serde_json::Value>) -> Res<serde_json::Value> {
+    fb.api(&method, &path, &query.unwrap_or_default(), body).await.map_err(|e| format!("{e:#}"))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AttachmentData {
+    content_type: String,
+    data_base64: String,
+}
+
+#[tauri::command]
+async fn feedback_attachment(fb: State<'_, SharedFeedback>, id: String) -> Res<AttachmentData> {
+    use base64::Engine;
+    if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+        return Err("無效的附件 id".into());
+    }
+    let (ct, bytes) = fb.attachment(&id).await.map_err(|e| format!("{e:#}"))?;
+    // only types the backend accepts are handed to the WebView
+    let ct = match ct.split(';').next().unwrap_or_default().trim() {
+        t @ ("image/png" | "image/jpeg" | "image/webp") => t.to_string(),
+        _ => "text/plain".to_string(),
+    };
+    Ok(AttachmentData { content_type: ct, data_base64: base64::engine::general_purpose::STANDARD.encode(bytes) })
+}
+
+/// Unread notifications (fix released, developer replies, status changes): every 10 minutes while signed in.
+async fn feedback_notifier(app: AppHandle, fb: SharedFeedback) {
+    tokio::time::sleep(Duration::from_secs(20)).await;
+    loop {
+        if fb.signed_in() {
+            let q = [("unread".to_string(), "1".to_string())].into_iter().collect();
+            if let Ok(v) = fb.api("GET", "/v1/notifications", &q, None).await {
+                let _ = app.emit("feedback://notifications", v);
+            }
+        }
+        tokio::time::sleep(Duration::from_secs(600)).await;
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -392,6 +514,9 @@ pub fn run() {
             let paths = paths::Paths::resolve()?;
             let core: SharedCore = Arc::new(Core::new(paths)?);
             app.manage(core.clone());
+            let fb: SharedFeedback = Arc::new(feedback::Feedback::new(&core.paths.data, feedback::client::configured_base(), core.resolver.clone()));
+            app.manage(fb.clone());
+            tauri::async_runtime::spawn(feedback_notifier(handle.clone(), fb));
             tauri::async_runtime::spawn(initialize(handle, core));
             Ok(())
         })
@@ -422,6 +547,17 @@ pub fn run() {
             download_self_update,
             apply_self_update,
             network_status,
+            feedback_status,
+            feedback_products,
+            feedback_sign_in_start,
+            feedback_sign_in_poll,
+            feedback_dev_sign_in,
+            feedback_sign_out,
+            feedback_prepare,
+            feedback_submit,
+            feedback_discard,
+            feedback_api,
+            feedback_attachment,
         ])
         .build(tauri::generate_context!())
         .expect("error while building Create Your World")

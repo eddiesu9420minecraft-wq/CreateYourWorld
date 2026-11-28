@@ -198,3 +198,60 @@
 - CYW 視窗的外掛頁面。
 - macOS／Linux 的 PATH（安裝程式掛鉤只在 Windows）。
 - 核心的錯誤訊息只有繁體中文。
+
+## 2026-11-28 · 反饋中心（Feedback Center，分支 `feature/feedback-center`）· Windows 11 x64
+
+架構：Cloudflare Worker＋D1＋R2，**只在本機執行**（wrangler 4.124 `dev --local`／workerd）。沒有建立任何 Cloudflare 資源，也沒有設定任何 Secret。合約見 `docs/feedback/API.md`。
+
+### 單元／API／安全測試（實際執行結果）
+- `services/feedback`：`npm run typecheck` 通過；`vitest`（真實 workerd，搭配本機 D1／R2）**11 個檔案、160 項全數通過**。
+  - unit：遮蔽規則（每一類，加上版本號、時間、中文等不應遮蔽的反例）、輸入驗證、狀態轉換表、圖片中繼資料檢查。
+  - api：完整流程（登入 → 建立 → 搜尋／篩選／排序 → 投票 → 留言 → 開發者回覆 → 狀態 → GitHub 同步（模擬）→ Webhook 回寫 → 任務／指派／分析／PR → 發布紀錄 → 通知）；GitHub 裝置登入（pending／slow_down／成功）。
+  - security：
+    - 每個特權端點的角色分離（匿名、user、developer、agent、cyws）；
+    - 環境資訊與附件的存取權限；正式環境的 `/v1/auth/dev` 回傳 404；
+    - 缺少同意、honeypot、連結過多、重複內容、速率限制（429＋Retry-After）、附件大小／類型／中繼資料／總量；
+    - Webhook 簽章錯誤回傳 401、防止同步迴圈；非維護者的 release webhook 被忽略；
+    - Agent 不能完成、關閉或發布；PR 網址不能指向其他 repo；
+    - prompt injection 內容只會以 `source.untrusted` 的資料形式出現；封鎖使用者；伺服器會再次遮蔽、超大 JSON 回傳 413。
+  - 突變測試（mutation check）：暫時停用 Webhook 簽章檢查 → 2 項失敗；暫時停用伺服器端遮蔽 → 1 項失敗；之後已還原。
+- `cargo test`（cyw-core）：53＋4 項通過，其中反饋相關 30 項：
+  - 遮蔽：私鑰、Token、Authorization、`key=value`、網址帳密、Email、IPv4／IPv6（不誤判版本號、時間與 `std::fs`）、MAC；Windows／macOS／Linux 的家目錄與敏感路徑；本機使用者與電腦名稱；冪等性。
+  - PNG／JPEG／WebP 中繼資料移除、截斷或損毀的檔案、依內容判斷類型（改名的 exe 被拒）。
+  - 網址與路徑規則（只允許 HTTPS，http 僅限 loopback，不能內嵌帳密、不能用非標準連接埠、不能路徑穿越）。
+  - 工作階段檔：Windows 以 DPAPI 加密，不含明文 Token。
+  - 對 127.0.0.1 的模擬後端：預覽不會連線；確認雜湊不符或未登入時不上傳；上傳的 JSON 與預覽逐位元組相同；附件已去除中繼資料；檔名不含資料夾；一般 API 橋接無法建立反饋、上傳或登入；工作階段只送往發出它的後端，收到 401 時清除。
+- 其他：`cargo test` pikara-secure 15 項（離線）、src-tauri 1 項、cyw-cli 16 項（不連網）通過；`tsc --noEmit` 與 `vite build` 通過。
+
+### GUI 端到端（真實視窗＋真實本機後端）
+- 方式：
+  - 執行 `tools/test/feedback-e2e.mjs`。
+  - debug 版 CYW（前端已嵌入）在看不見的桌面上執行，資料夾為 `PIKARA_CYW_DATA_DIR=D:\t\cyw-fb-e2e\data`，WebView2 使用獨立資料夾。
+  - `PIKARA_CYW_FEEDBACK_API=http://127.0.0.1:8787`。
+- 結果：**43／43 通過，沒有主控台錯誤**（`docs/feedback/e2e-report.json`；截圖在 `docs/screenshots/feedback/`）。
+  - 透過 UI 本機登入。撰寫一則 Bug：選擇軟體與類別，用檔案選擇器附上帶 tEXt 區塊的 PNG，以及含 Token、密碼、IP、Email、私鑰的日誌。
+  - 預覽前後端沒有任何資料。預覽畫面不含任何秘密，列出遮蔽統計、環境資訊、「已移除 1 個中繼資料區塊」，以及截圖的人工確認警示。
+  - 勾選同意前，「確認並上傳」為停用狀態。
+  - 後端儲存的內容：內文與日誌都已遮蔽；PNG 不含 tEXt；環境資訊在同意後才儲存。
+  - 留言會遮蔽 IP。搜尋與類別篩選正確，投票正確。一般使用者看不到管理面板，透過 API 改狀態會得到 403。
+  - 維護者：已確認 → 開發者回覆 → 轉換為 CYWS 任務（任務畫面顯示不可信任內容標示）→ 處理中 → 已修復。
+  - 記錄發布：未勾選人工確認時按鈕停用；記錄後反饋變為 `released`、`fixed_in = v0.3.9`。
+  - 回報者收到 reply、status、released 三種通知。
+- 測試過程中發現並修正：
+  - 讀取附件檔失敗時，原本會產生未處理的 Promise 錯誤，現在改為顯示提示。
+  - 預覽中作業系統重複顯示（「Windows Windows 11 Home」）。這個修正晚於截圖，截圖仍是舊畫面。
+  - 另外修正了測試腳本本身的時序問題：按鈕在載入完成前被點擊、產品選單選項尚未載入。
+- 動畫：
+  - `ui-motion.mjs` 26／26 通過，沒有回歸。
+  - 切換到反饋頁只動畫 `opacity`／`color`，平均 16.7 ms／幀、最大間隔 17 ms，靜止後沒有持續執行的動畫。
+
+### 跨平台
+- Windows 11 x64：以上全部實測。
+- macOS（arm64／x64）與 Linux：本機沒有這些平台。
+  - 遮蔽測試已包含三種平台的路徑格式；Unix 的 0600 權限測試只會在 Unix 上編譯執行。
+  - CI 4 個平台的矩陣會執行 cyw-core（含反饋）與 `services/feedback` 的完整測試（已加入 `ci.yml`）。結果以 PR 上的 CI 為準。
+
+### 未完成／未驗證
+- 真正的 GitHub 裝置登入，以及對真實 GitHub 的 Issues 雙向同步：需要 OAuth App、GitHub Token 與 Webhook Secret，必須等你批准後才會建立。目前只以模擬的 GitHub 測試。
+- 部署到 Cloudflare（Worker、D1、R2）：尚未進行，需要批准。
+- CYWS 端的整合：已將任務 API 合約傳給 CYWS 工作階段，尚未收到回覆。

@@ -35,7 +35,13 @@ jobs:
         run: cargo test --manifest-path crates/pikara-secure/Cargo.toml --lib --test attacks -- --include-ignored --nocapture
       - name: cyw CLI sidecar (required by the app build)
         run: node tools/build-cyw-sidecar.mjs
-      - name: cyw-core tests (lock, ids/migration, plugins, PATH, signed plugin index)
+      - name: Feedback backend tests (Worker in local workerd with D1/R2; unit, API, security)
+        working-directory: services/feedback
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+      - name: cyw-core tests (lock, ids/migration, plugins, PATH, signed plugin index, feedback client)
         run: cargo test --manifest-path crates/cyw-core/Cargo.toml
       - name: cyw CLI tests (real binary, isolated data; network tests download from GitHub)
         env: { CYW_NET_TESTS: "1", GITHUB_TOKEN: "${{ github.token }}" }

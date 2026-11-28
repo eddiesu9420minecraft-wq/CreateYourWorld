@@ -22,6 +22,13 @@ const PATHS: Record<string, string> = {
   chip: "M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4",
   retry: "M4 12a8 8 0 0 1 13.66-5.66M20 4v5h-5M20 12a8 8 0 0 1-13.66 5.66M4 20v-5h5",
   terminal: "M4 5h16v14H4zM7 9l3 3-3 3M12 15h5",
+  feedback: "M4 5h16v11H9l-5 4zM8 9h8M8 12h5",
+  vote: "M12 5l6 7h-4v7h-4v-7H6z",
+  bell: "M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4",
+  clip: "M15 7l-6.5 6.5a2 2 0 0 0 2.8 2.8L18 9.6a4 4 0 0 0-5.7-5.7L5.6 10.6a6 6 0 0 0 8.5 8.5L20 13",
+  lock: "M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3",
+  task: "M9 5h10M9 12h10M9 19h10M4 5l1 1 2-2M4 12l1 1 2-2M4 19l1 1 2-2",
+  comment: "M5 5h14v10H10l-4 3v-3H5z",
 };
 
 export function Icon({ name, size = 18, className }: { name: keyof typeof PATHS | string; size?: number; className?: string }) {

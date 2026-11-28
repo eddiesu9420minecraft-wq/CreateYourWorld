@@ -136,3 +136,81 @@ export function errText(e: unknown): string {
 export const CHANNEL_LABEL: Record<Channel, string> = { stable: "Stable 穩定版", beta: "Beta 測試版", alpha: "Alpha 搶先版" };
 export const OS_LABEL: Record<string, string> = { windows: "Windows", macos: "macOS", linux: "Linux" };
 export const ARCH_LABEL: Record<string, string> = { x86_64: "x64", aarch64: "ARM64" };
+
+// ------------------------------------------------------------------ Feedback Center (docs/feedback/API.md) ----
+
+export type FbCategory = "bug" | "feature" | "performance" | "compatibility" | "general";
+export type FbStatus = "open" | "triaged" | "in_progress" | "fixed" | "released" | "closed";
+export type FbResolution = "completed" | "duplicate" | "wont_fix" | "invalid" | "spam";
+export type FbRole = "user" | "developer" | "maintainer";
+export type TaskStatus = "todo" | "in_progress" | "in_review" | "done" | "wont_do";
+
+export interface FbUser { login: string; role: FbRole; avatar_url?: string | null }
+export interface FbServiceStatus { configured: boolean; base: string | null; user: FbUser | null; error: string | null }
+export interface FbProduct { id: string; name: string; installed: string | null }
+export interface FbEnvironment { product_version: string | null; cyw_version: string; os: string; os_version: string | null; arch: string }
+export interface FbSummary {
+  id: string; number: number; product: string; category: FbCategory; title: string; status: FbStatus;
+  resolution: FbResolution | null; votes: number; comments: number; author: FbUser | null;
+  created_at: number; updated_at: number; github: { repo: string; number: number; url: string } | null;
+  fixed_in: string | null; my_vote: boolean;
+}
+export interface FbAttachment { id: string; filename: string; content_type: string; size: number; created_at: number }
+export interface FbEvent { id: string; kind: string; actor: FbUser | null; from: string | null; to: string | null; note: string | null; created_at: number }
+export interface FbFull extends FbSummary {
+  body: string; environment: FbEnvironment | null; attachments: FbAttachment[]; events: FbEvent[];
+  assignee: FbUser | null; labels: string[]; duplicate_of: string | null; subscribed: boolean;
+}
+export interface FbComment { id: string; author: FbUser | null; body: string; official: boolean; source: "cyw" | "github"; github_author: string | null; hidden: boolean; created_at: number }
+export interface FbNotification { id: string; feedback_id: string; kind: "reply" | "status" | "released"; title: string; body: string; created_at: number; read: boolean }
+export interface FbTask {
+  id: string; feedback_id: string; feedback_number: number; product: string; repo: string; title: string; status: TaskStatus;
+  assignee: FbUser | null; agent_allowed: boolean;
+  source: { untrusted: true; handling: string; title: string; body: string; environment: FbEnvironment | null };
+  analysis: { id: string; author: { kind: string; name: string }; summary: string; created_at: number }[];
+  pull_requests: { url: string; repo: string; number: number; added_by: { kind: string; name: string }; created_at: number }[];
+  created_by: FbUser | null; created_at: number; updated_at: number;
+}
+export interface FbDraft {
+  product: string; category: FbCategory; title: string; body: string;
+  includeEnvironment: boolean; includeDiagnostics: boolean;
+  attachments: { filename: string; dataBase64: string }[];
+}
+export interface FbAttachmentPreview {
+  filename: string; contentType: string; size: number; sha256: string; metadataRemoved: number;
+  redactions: Record<string, number>; text: string | null; dataUrl: string | null;
+}
+export interface FbPreview {
+  id: string; sha256: string; endpoint: string; payload: Record<string, unknown>;
+  redactions: Record<string, number>; attachments: FbAttachmentPreview[]; warnings: string[];
+}
+export interface FbSubmitResult { feedback: FbFull; serverRedactions: number; attachments: FbAttachment[]; attachmentErrors: string[] }
+export interface FbDeviceStart { userCode: string; verificationUri: string; interval: number; expiresIn: number }
+
+export const fb = {
+  status: () => invoke<FbServiceStatus>("feedback_status"),
+  products: () => invoke<FbProduct[]>("feedback_products"),
+  signInStart: () => invoke<FbDeviceStart>("feedback_sign_in_start"),
+  signInPoll: () => invoke<FbUser | null>("feedback_sign_in_poll"),
+  devSignIn: (login: string, role: FbRole) => invoke<FbUser>("feedback_dev_sign_in", { login, role }),
+  signOut: () => invoke<void>("feedback_sign_out"),
+  prepare: (draft: FbDraft) => invoke<FbPreview>("feedback_prepare", { draft }),
+  submit: (previewId: string, confirmedSha256: string) => invoke<FbSubmitResult>("feedback_submit", { previewId, confirmedSha256 }),
+  discard: (previewId: string) => invoke<void>("feedback_discard", { previewId }),
+  call: <T,>(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE", path: string, query?: Record<string, string>, body?: unknown) =>
+    invoke<T>("feedback_api", { method, path, query: query ?? null, body: body ?? null }),
+  attachment: (id: string) => invoke<{ contentType: string; dataBase64: string }>("feedback_attachment", { id }),
+  onNotifications: (cb: (n: { items: FbNotification[]; unread: number }) => void): Promise<UnlistenFn> =>
+    listen<{ items: FbNotification[]; unread: number }>("feedback://notifications", (e) => cb(e.payload)),
+  onSession: (cb: () => void): Promise<UnlistenFn> => listen("feedback://session", () => cb()),
+};
+
+export const FB_CATEGORY: Record<FbCategory, string> = { bug: "Bug 回報", feature: "功能建議", performance: "效能問題", compatibility: "相容性問題", general: "一般反饋" };
+export const FB_STATUS: Record<FbStatus, string> = { open: "待處理", triaged: "已確認", in_progress: "處理中", fixed: "已修復（待發布）", released: "已發布修復", closed: "已關閉" };
+export const FB_RESOLUTION: Record<FbResolution, string> = { completed: "已完成", duplicate: "重複", wont_fix: "不修正", invalid: "無效", spam: "垃圾訊息" };
+export const TASK_STATUS: Record<TaskStatus, string> = { todo: "待辦", in_progress: "進行中", in_review: "審核中", done: "完成", wont_do: "不處理" };
+export const FB_REDACTION: Record<string, string> = {
+  private_key: "私鑰", token: "Token／密碼", url_credentials: "網址內的帳密", email: "電子郵件", ip: "IP 位址",
+  mac: "MAC 位址", user: "使用者名稱", host: "電腦名稱", path: "敏感路徑",
+};
+export const ROLE_RANK: Record<FbRole, number> = { user: 0, developer: 1, maintainer: 2 };
