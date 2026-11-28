@@ -48,8 +48,16 @@
       ],
       "linux-x86_64": [
         {
-          "pattern": "_amd64\\.AppImage$",
-          "kind": "app-image"
+          "pattern": "^PikaraScienceStudio_.*_linux-x86_64\\.tar\\.gz$",
+          "kind": "archive",
+          "launch": "PikaraScienceStudio/PikaraScienceStudio"
+        }
+      ],
+      "linux-aarch64": [
+        {
+          "pattern": "^PikaraScienceStudio_.*_linux-aarch64\\.tar\\.gz$",
+          "kind": "archive",
+          "launch": "PikaraScienceStudio/PikaraScienceStudio"
         }
       ]
     },
@@ -60,7 +68,13 @@
     ],
     "legacyIds": [
       "pikara-science-studio"
-    ]
+    ],
+    "cli": {
+      "binary": "PikaraScienceStudio",
+      "platforms": [
+        "linux"
+      ]
+    }
   },
   {
     "id": "runX",

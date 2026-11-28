@@ -31,6 +31,11 @@ impl Platform {
     }
 }
 
+/// `windows`, `macos` or `linux` (same names as `Platform::os` and the catalog keys).
+pub fn current_os() -> &'static str {
+    std::env::consts::OS
+}
+
 #[cfg(target_os = "macos")]
 fn is_translated() -> bool {
     crate::util::hidden_command("sysctl")
@@ -84,6 +89,11 @@ pub fn select_asset(product: &Product, release: &GhRelease, plat: &Platform) -> 
         }
     }
 
+    // A product with explicit rules has no asset for this platform: never guess (a heuristic could pick another
+    // platform's package).
+    if !product.assets.is_empty() {
+        return None;
+    }
     // Heuristics for products without explicit rules.
     candidates
         .iter()
@@ -158,6 +168,42 @@ mod tests {
     }
     fn plat(os: &str, arch: &str) -> Platform {
         Platform { os: os.into(), arch: arch.into(), build_arch: arch.into(), rosetta: false }
+    }
+
+    /// The real Studio asset names (feat/cross-platform packaging): every OS/arch gets exactly its own package,
+    /// and a platform without a package gets nothing — never another platform's file.
+    #[test]
+    fn studio_cross_platform_assets() {
+        let catalog = crate::catalog::load();
+        let studio = catalog.iter().find(|p| p.id == "PikaraScienceStudio").unwrap();
+        let v = "0.4.0";
+        let names: Vec<String> = vec![
+            format!("Pikara.Science.Studio_{v}_x64-setup.exe"),
+            "PikaraScienceStudio.exe".into(),
+            format!("Pikara.Science.Studio_{v}_aarch64.dmg"),
+            format!("Pikara.Science.Studio_{v}_aarch64.app.tar.gz"),
+            format!("Pikara.Science.Studio_{v}_x64.dmg"),
+            format!("Pikara.Science.Studio_{v}_x64.app.tar.gz"),
+            format!("PikaraScienceStudio_{v}_linux-x86_64.tar.gz"),
+            format!("PikaraScienceStudio_{v}_linux-aarch64.tar.gz"),
+            "SHA256SUMS.txt".into(),
+        ];
+        let r = release(&names.iter().map(String::as_str).collect::<Vec<_>>());
+        let pick = |os: &str, arch: &str| select_asset(studio, &r, &plat(os, arch)).map(|a| (a.name, a.kind, a.launch));
+        assert_eq!(pick("windows", "x86_64").unwrap().0, "PikaraScienceStudio.exe");
+        assert_eq!(pick("macos", "aarch64").unwrap().0, format!("Pikara.Science.Studio_{v}_aarch64.app.tar.gz"));
+        assert_eq!(pick("macos", "aarch64").unwrap().1, InstallKind::AppTar);
+        assert_eq!(pick("macos", "x86_64").unwrap().0, format!("Pikara.Science.Studio_{v}_x64.app.tar.gz"));
+        let lx = pick("linux", "x86_64").unwrap();
+        assert_eq!((lx.0.as_str(), lx.1, lx.2.as_deref()), (format!("PikaraScienceStudio_{v}_linux-x86_64.tar.gz").as_str(), InstallKind::Archive, Some("PikaraScienceStudio/PikaraScienceStudio")));
+        assert_eq!(pick("linux", "aarch64").unwrap().0, format!("PikaraScienceStudio_{v}_linux-aarch64.tar.gz"));
+        // a release without a Linux package: nothing for Linux (no heuristic fallback to macOS/Windows files)
+        let win_mac_only = release(&[&names[0], &names[1], &names[3], &names[5]]);
+        assert!(select_asset(studio, &win_mac_only, &plat("linux", "x86_64")).is_none());
+        assert!(select_asset(studio, &win_mac_only, &plat("windows", "aarch64")).is_none());
+        // CLI-only on Linux, GUI elsewhere
+        let cli = studio.cli.as_ref().unwrap();
+        assert_eq!(cli.platforms, vec!["linux".to_string()]);
     }
 
     #[test]

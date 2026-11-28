@@ -30,7 +30,7 @@ pub enum Launched {
 
 /// Is this product a command-line tool (no window)?
 pub fn is_cli(core: &Core, product_id: &str) -> bool {
-    core.product(product_id).map(|p| p.cli.is_some()).unwrap_or(false)
+    core.product(product_id).map(|p| p.cli.as_ref().is_some_and(|c| c.applies_here())).unwrap_or(false)
 }
 
 fn refuse_scripts(path: &Path) -> anyhow::Result<()> {
@@ -59,7 +59,7 @@ pub fn launch(core: &Core, product_id: &str, args: &[OsString], mode: Mode) -> a
     let wait = match mode {
         Mode::Wait => true,
         Mode::Detach => false,
-        Mode::Auto => p.cli.is_some() || !args.is_empty(),
+        Mode::Auto => p.cli.as_ref().is_some_and(|c| c.applies_here()) || !args.is_empty(),
     };
     let is_bundle = v.launch.extension().is_some_and(|x| x == "app");
     if wait {

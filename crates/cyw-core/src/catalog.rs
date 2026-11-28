@@ -57,6 +57,16 @@ pub enum Category {
 pub struct CliSpec {
     /// Binary name without extension (`runxc`); `.exe` is added on Windows.
     pub binary: String,
+    /// Operating systems (`windows`, `macos`, `linux`) where the product *is* a command-line tool; empty = all.
+    /// e.g. PikaraScienceStudio is a GUI app on Windows / macOS and CLI-only on Linux.
+    #[serde(default)]
+    pub platforms: Vec<String>,
+}
+
+impl CliSpec {
+    pub fn applies_here(&self) -> bool {
+        self.platforms.is_empty() || self.platforms.iter().any(|p| p.eq_ignore_ascii_case(crate::platform::current_os()))
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

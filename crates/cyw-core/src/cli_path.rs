@@ -21,7 +21,7 @@ pub fn bin_dir(paths: &Paths) -> PathBuf {
 
 /// File name of a product's command-line binary on this platform (`runxc.exe` on Windows).
 pub fn binary_name(p: &Product) -> Option<String> {
-    p.cli.as_ref().map(|c| format!("{}{}", c.binary, std::env::consts::EXE_SUFFIX))
+    p.cli.as_ref().filter(|c| c.applies_here()).map(|c| format!("{}{}", c.binary, std::env::consts::EXE_SUFFIX))
 }
 
 fn sha256(p: &Path) -> Option<String> {
