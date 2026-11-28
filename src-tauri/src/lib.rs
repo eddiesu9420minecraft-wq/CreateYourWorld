@@ -1,18 +1,22 @@
-mod archive;
-mod catalog;
-mod cli_path;
-mod hub;
-mod downloads;
-mod github;
-mod install;
-mod paths;
-mod platform;
-mod procs;
-mod runtime;
-mod selfupdate;
-mod settings;
-mod util;
-mod verify;
+// The core (download, verification, install, update, PATH) is shared with the `cyw` CLI.
+use cyw_core::{downloads, github, hub, paths, platform, runtime, selfupdate, settings};
+use cyw_core::host::{App, BoxFuture, Host};
+
+/// Tauri as the core's host: events go to the WebView, tasks run on Tauri's runtime.
+struct TauriHost(AppHandle);
+
+impl Host for TauriHost {
+    fn emit_json(&self, topic: &str, payload: serde_json::Value) {
+        let _ = self.0.emit(topic, payload);
+    }
+    fn spawn(&self, task: BoxFuture) {
+        tauri::async_runtime::spawn(task);
+    }
+}
+
+fn h(app: &AppHandle) -> App {
+    Arc::new(TauriHost(app.clone()))
+}
 
 use crate::hub::{Core, ProductView, SharedCore};
 use crate::downloads::JobInfo;
@@ -92,18 +96,10 @@ async fn initialize(app: AppHandle, core: SharedCore) {
     }
 
     splash.begin("settings", "正在讀取設定…");
-    *core.settings.write().unwrap() = util::load_json::<Settings>(&core.paths.settings_file()).clamp();
-
     splash.begin("installed", "正在檢查已安裝的應用程式…");
-    *core.installed.lock().unwrap() = util::load_json(&core.paths.installed_file());
-    // developer tools on PATH: restore the bin copies / PATH entry if something removed them
-    {
-        let db = core.installed.lock().unwrap().clone();
-        let problems = cli_path::sync(&core.paths, &core.catalog, &db);
-        let mut m = core.cli_problems.lock().unwrap();
-        for (id, msg) in problems {
-            m.insert(id, msg);
-        }
+    // settings + installed apps (legacy package ids migrated under the cross-process lock), PATH copies synced
+    if let Err(e) = core.load_state() {
+        eprintln!("[cyw] load state: {e:#}");
     }
     let c = core.clone();
     let _ = tokio::task::spawn_blocking(move || hub::verify_installed(&c)).await;
@@ -111,7 +107,7 @@ async fn initialize(app: AppHandle, core: SharedCore) {
     splash.done_with("installed", format!("{n} 個"));
 
     splash.begin("jobs", "正在恢復下載佇列…");
-    core.jobs.restore();
+    core.jobs.restore(&core.catalog);
 
     splash.begin("releases", "正在向 GitHub 查詢最新版本…");
     // Warms the release cache so the main window opens with real data. Bounded so an unreachable
@@ -154,18 +150,18 @@ async fn install_app(app: AppHandle, core: State<'_, SharedCore>, product_id: St
     // Never touch a running app: remember the request and update after the user quits it.
     if core.installed_app(&product_id).is_some() && hub::is_running(&core, &product_id) {
         core.pending_updates.lock().unwrap().insert(product_id.clone());
-        core.notify_apps_changed(&app);
+        core.notify_apps_changed(&h(&app));
         return Ok(InstallOutcome { job_id: None, switched_to: None, deferred: true });
     }
     // A version kept on disk (e.g. after a rollback) is switched to instead of downloaded again.
     if let Some(t) = &tag {
         hub::ensure_not_busy(&core, &product_id).map_err(err)?;
         if hub::switch_to(&core, &product_id, t).map_err(err)? {
-            core.notify_apps_changed(&app);
+            core.notify_apps_changed(&h(&app));
             return Ok(InstallOutcome { job_id: None, switched_to: Some(t.clone()), deferred: false });
         }
     }
-    let id = downloads::enqueue(&core, &app, &product_id, tag).await.map_err(err)?;
+    let id = downloads::enqueue(&core, &h(&app), &product_id, tag).await.map_err(err)?;
     Ok(InstallOutcome { job_id: Some(id), switched_to: None, deferred: false })
 }
 
@@ -188,7 +184,7 @@ async fn uninstall_app(app: AppHandle, core: State<'_, SharedCore>, product_id: 
     let c = core.inner().clone();
     let pid = product_id.clone();
     tokio::task::spawn_blocking(move || hub::uninstall(&c, &pid)).await.map_err(err)?.map_err(|e| format!("{e:#}"))?;
-    core.notify_apps_changed(&app);
+    core.notify_apps_changed(&h(&app));
     Ok(())
 }
 
@@ -196,7 +192,7 @@ async fn uninstall_app(app: AppHandle, core: State<'_, SharedCore>, product_id: 
 fn rollback_app(app: AppHandle, core: State<'_, SharedCore>, product_id: String) -> Res<String> {
     hub::ensure_not_busy(&core, &product_id).map_err(err)?;
     let tag = hub::rollback(&core, &product_id).map_err(err)?;
-    core.notify_apps_changed(&app);
+    core.notify_apps_changed(&h(&app));
     Ok(tag)
 }
 
@@ -211,7 +207,7 @@ fn open_app_folder(app: AppHandle, core: State<'_, SharedCore>, product_id: Stri
 #[tauri::command]
 fn set_on_path(app: AppHandle, core: State<'_, SharedCore>, product_id: String, enabled: bool) -> Res<Option<String>> {
     let r = hub::set_on_path(&core, &product_id, enabled).map_err(err)?;
-    core.notify_apps_changed(&app);
+    core.notify_apps_changed(&h(&app));
     Ok(r)
 }
 
@@ -236,17 +232,17 @@ fn list_jobs(core: State<'_, SharedCore>) -> Vec<JobInfo> {
 
 #[tauri::command]
 fn pause_job(app: AppHandle, core: State<'_, SharedCore>, id: u64) {
-    downloads::pause(&core, &app, id)
+    downloads::pause(&core, &h(&app), id)
 }
 
 #[tauri::command]
 fn resume_job(app: AppHandle, core: State<'_, SharedCore>, id: u64) {
-    downloads::resume(&core, &app, id)
+    downloads::resume(&core, &h(&app), id)
 }
 
 #[tauri::command]
 fn cancel_job(app: AppHandle, core: State<'_, SharedCore>, id: u64) {
-    downloads::cancel(&core, &app, id)
+    downloads::cancel(&core, &h(&app), id)
 }
 
 #[tauri::command]
@@ -261,18 +257,18 @@ fn get_settings(core: State<'_, SharedCore>) -> Settings {
 
 #[tauri::command]
 fn save_settings(app: AppHandle, core: State<'_, SharedCore>, settings: Settings) -> Res<Settings> {
-    let s = settings.clamp();
-    util::save_json(&core.paths.settings_file(), &s).map_err(err)?;
-    *core.settings.write().unwrap() = s.clone();
-    downloads::pump(&core, &app); // concurrency may have increased
+    let s = core.modify_settings(|cur| *cur = settings).map_err(err).map(|_| core.settings.read().unwrap().clone())?;
+    downloads::pump(&core, &h(&app)); // concurrency may have increased
     Ok(s)
 }
 
 #[tauri::command]
 fn set_channel(core: State<'_, SharedCore>, product_id: String, channel: Channel) -> Res<()> {
-    let mut s = core.settings.write().unwrap();
-    s.channels.insert(product_id, channel);
-    util::save_json(&core.paths.settings_file(), &*s).map_err(err)
+    let id = core.product(&product_id).map_err(err)?.id.clone();
+    core.modify_settings(|s| {
+        s.channels.insert(id, channel);
+    })
+    .map_err(err)
 }
 
 #[derive(Serialize)]
@@ -327,7 +323,7 @@ async fn update_cycle(app: &AppHandle, core: &SharedCore) {
         (s.self_update_mode, s.apps_update_mode)
     };
     if self_mode != UpdateMode::Manual {
-        selfupdate::check(core, app, self_mode).await;
+        selfupdate::check(core, &h(app), self_mode).await;
     }
     if apps_mode != UpdateMode::Manual {
         let views = hub::product_views(core, true).await;
@@ -338,7 +334,7 @@ async fn update_cycle(app: &AppHandle, core: &SharedCore) {
             }
         }
         let _ = app.emit("updates://checked", available.len());
-        core.notify_apps_changed(app);
+        core.notify_apps_changed(&h(app));
     }
 }
 
@@ -348,7 +344,7 @@ async fn request_app_update(app: &AppHandle, core: &SharedCore, product_id: &str
         return;
     }
     if !core.jobs.has_active(product_id) {
-        let _ = downloads::enqueue(core, app, product_id, None).await;
+        let _ = downloads::enqueue(core, &h(app), product_id, None).await;
     }
 }
 
@@ -358,9 +354,9 @@ async fn process_pending(app: &AppHandle, core: &SharedCore) {
         if !hub::is_running(core, &id) {
             core.pending_updates.lock().unwrap().remove(&id);
             if !core.jobs.has_active(&id) {
-                let _ = downloads::enqueue(core, app, &id, None).await;
+                let _ = downloads::enqueue(core, &h(app), &id, None).await;
             }
-            core.notify_apps_changed(app);
+            core.notify_apps_changed(&h(app));
         }
     }
 }
@@ -373,13 +369,13 @@ fn self_update_status(core: State<'_, SharedCore>) -> selfupdate::SelfUpdateStat
 #[tauri::command]
 async fn check_self_update(app: AppHandle, core: State<'_, SharedCore>) -> Res<selfupdate::SelfUpdateStatus> {
     // A manual check never auto-installs; it only reports.
-    selfupdate::check(&core, &app, UpdateMode::Notify).await;
+    selfupdate::check(&core, &h(&app), UpdateMode::Notify).await;
     Ok(core.selfupdate.status())
 }
 
 #[tauri::command]
 async fn download_self_update(app: AppHandle, core: State<'_, SharedCore>) -> Res<u64> {
-    selfupdate::download(&core, &app).await.map_err(err)
+    selfupdate::download(&core, &h(&app)).await.map_err(err)
 }
 
 /// Apply the verified update now and restart CYW.
@@ -415,7 +411,7 @@ pub fn run() {
         .plugin(pikara_splash::init(splash_config()))
         .setup(|app| {
             let handle = app.handle().clone();
-            let paths = paths::Paths::resolve(&handle)?;
+            let paths = paths::Paths::resolve()?;
             let core: SharedCore = Arc::new(Core::new(paths)?);
             app.manage(core.clone());
             tauri::async_runtime::spawn(initialize(handle, core));
@@ -462,4 +458,13 @@ pub fn run() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod version_tests {
+    /// The GUI and the CLI ship together: the core's version must be the app's version.
+    #[test]
+    fn version_matches_app() {
+        assert_eq!(cyw_core::VERSION, env!("CARGO_PKG_VERSION"));
+    }
 }

@@ -18,10 +18,10 @@ use pikara_secure::{keys, net, SecureError};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter};
+use crate::host::{App, HostExt};
 
 pub const PRODUCT_ID: &str = "create-your-world";
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = crate::VERSION;
 const MANIFEST_URL: &str = "https://raw.githubusercontent.com/eddiesu9420minecraft-wq/CreateYourWorld/main/update.json";
 const RELEASE_PREFIX: &str = "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/";
 
@@ -72,7 +72,7 @@ impl SelfUpdater {
     }
 }
 
-fn set(core: &SharedCore, app: &AppHandle, f: impl FnOnce(&mut SelfUpdateStatus)) {
+fn set(core: &SharedCore, app: &App, f: impl FnOnce(&mut SelfUpdateStatus)) {
     let s = {
         let mut st = core.selfupdate.status.lock().unwrap();
         f(&mut st);
@@ -116,7 +116,7 @@ fn is_security(e: &SecureError) -> bool {
 }
 
 /// Check for a CYW update. Never blocks startup; network failure is just a status.
-pub async fn check(core: &SharedCore, app: &AppHandle, mode: UpdateMode) {
+pub async fn check(core: &SharedCore, app: &App, mode: UpdateMode) {
     if core.selfupdate.status().state == "unsupported" {
         return;
     }
@@ -173,7 +173,7 @@ pub async fn check(core: &SharedCore, app: &AppHandle, mode: UpdateMode) {
 }
 
 /// Queue the verified offer in the normal download manager.
-pub async fn download(core: &SharedCore, app: &AppHandle) -> anyhow::Result<u64> {
+pub async fn download(core: &SharedCore, app: &App) -> anyhow::Result<u64> {
     let (version, _notes, entry) = core.selfupdate.offer.lock().unwrap().clone().ok_or_else(|| anyhow::anyhow!("沒有可用的更新"))?;
     let kind = if cfg!(windows) { InstallKind::Nsis } else { InstallKind::AppTar };
     let id = crate::downloads::enqueue_self_update(core, app, &version, &entry, kind)?;
@@ -185,7 +185,7 @@ pub async fn download(core: &SharedCore, app: &AppHandle) -> anyhow::Result<u64>
 }
 
 /// Called by the download pipeline once the file passed SHA-256 + signature verification.
-pub fn staged(core: &SharedCore, app: &AppHandle, version: &str, file: PathBuf, kind: InstallKind) -> anyhow::Result<()> {
+pub fn staged(core: &SharedCore, app: &App, version: &str, file: PathBuf, kind: InstallKind) -> anyhow::Result<()> {
     let dir = core.paths.data.join("self-update").join(crate::util::sanitize_component(version));
     std::fs::create_dir_all(&dir)?;
     // Drop the download's ".part" suffix and product/version prefix: stage under the real asset name.
@@ -201,7 +201,7 @@ pub fn staged(core: &SharedCore, app: &AppHandle, version: &str, file: PathBuf, 
     Ok(())
 }
 
-pub fn failed(core: &SharedCore, app: &AppHandle, error: String, security: bool) {
+pub fn failed(core: &SharedCore, app: &App, error: String, security: bool) {
     set(core, app, |s| {
         s.state = "error".into();
         s.error = Some(error);

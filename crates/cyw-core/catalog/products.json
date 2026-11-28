@@ -1,6 +1,6 @@
 [
   {
-    "id": "pikara-science-studio",
+    "id": "PikaraScienceStudio",
     "name": "Pikara Science Studio",
     "tagline": "AI 科學影片製作工作台",
     "description": "以 Tauri 2、Remotion 與 CosyVoice 3 打造的科學影片製作工作台：從腳本、配音到動畫輸出一站完成。",
@@ -57,10 +57,13 @@
       "\\.sig$",
       "SHA256SUMS",
       "skill\\.zip$"
+    ],
+    "legacyIds": [
+      "pikara-science-studio"
     ]
   },
   {
-    "id": "runx",
+    "id": "runX",
     "name": "runX",
     "tagline": "原創程式語言與 AOT 原生編譯器",
     "description": "runX 是 pikara 從零打造的程式語言。編譯器 runxc 以 Rust 撰寫，透過 Cranelift 把 .rux 直接編譯成不依賴 C 執行期的極小原生執行檔。產生 Windows 執行檔需要 Visual Studio Build Tools（C++）與 Windows SDK 的連結器。",
@@ -105,6 +108,9 @@
       "\\.sig$",
       "SHA256SUMS"
     ],
-    "minisignPublicKey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEzMjE2NDQ5RUVCOTQ3QTUKUldTbFI3bnVTV1FoRTlzOUNDQUd6VU00SDhRNHJaUmpuNEhEbmJuUGV5dkFjd3hnLzhuYkNtNWUK"
+    "minisignPublicKey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEzMjE2NDQ5RUVCOTQ3QTUKUldTbFI3bnVTV1FoRTlzOUNDQUd6VU00SDhRNHJaUmpuNEhEbmJuUGV5dkFjd3hnLzhuYkNtNWUK",
+    "legacyIds": [
+      "runx"
+    ]
   }
 ]

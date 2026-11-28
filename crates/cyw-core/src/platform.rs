@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn studio_rules() {
         let catalog = crate::catalog::load();
-        let studio = catalog.iter().find(|p| p.id == "pikara-science-studio").unwrap();
+        let studio = catalog.iter().find(|p| p.id == "PikaraScienceStudio").unwrap();
         let r = release(&["pikara-studio-skill.zip", "Pikara.Science.Studio_0.3.1_x64-setup.exe", "PikaraScienceStudio.exe", "SHA256SUMS.txt"]);
         let a = select_asset(studio, &r, &plat("windows", "x86_64")).unwrap();
         assert_eq!(a.name, "PikaraScienceStudio.exe");
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn heuristics_pick_arch() {
         let p = crate::catalog::Product {
-            id: "x".into(), name: "x".into(), tagline: String::new(), description: String::new(), repo: None, glyph: None,
+            id: "x".into(), legacy_ids: vec![], name: "x".into(), tagline: String::new(), description: String::new(), repo: None, glyph: None,
             assets: Default::default(), ignore_assets: vec![], minisign_public_key: None,
             category: Default::default(), cli: None, default_channel: None,
         };

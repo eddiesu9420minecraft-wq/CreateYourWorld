@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter};
+use crate::host::{App, HostExt};
 use tokio::io::AsyncWriteExt;
 
 const RUN: u8 = 0;
@@ -107,11 +107,12 @@ impl DownloadManager {
     }
 
     /// Restore persisted jobs. Anything that was in flight comes back as paused (resumable).
-    pub fn restore(&self) -> usize {
+    pub fn restore(&self, catalog: &[crate::catalog::Product]) -> usize {
         let p: Persisted = load_json(&self.store);
         let mut slots = self.slots.lock().unwrap();
         let mut resumable = 0;
         for mut info in p.jobs {
+            info.product_id = crate::ids::canonical_id(catalog, &info.product_id);
             if matches!(info.state, JobState::Queued | JobState::Downloading | JobState::Verifying | JobState::Installing) {
                 info.state = JobState::Paused;
                 info.speed = 0;
@@ -162,7 +163,7 @@ impl DownloadManager {
     }
 }
 
-fn emit(app: &AppHandle, info: &JobInfo) {
+fn emit(app: &App, info: &JobInfo) {
     let _ = app.emit("downloads://job", info);
 }
 
@@ -190,7 +191,7 @@ fn find_aux(release: &GhRelease, asset_name: &str) -> (Option<String>, Option<St
 }
 
 /// Queue an install (or update) of `product_id`. `tag = None` means the channel's latest.
-pub async fn enqueue(core: &SharedCore, app: &AppHandle, product_id: &str, tag: Option<String>) -> anyhow::Result<u64> {
+pub async fn enqueue(core: &SharedCore, app: &App, product_id: &str, tag: Option<String>) -> anyhow::Result<u64> {
     crate::hub::ensure_not_busy(core, product_id)?;
     let (product, release, asset) = resolve_release(core, product_id, tag.as_deref()).await?;
     let installed = core.installed_app(product_id);
@@ -231,7 +232,7 @@ pub async fn enqueue(core: &SharedCore, app: &AppHandle, product_id: &str, tag: 
     Ok(id)
 }
 
-pub fn pause(core: &SharedCore, app: &AppHandle, id: u64) {
+pub fn pause(core: &SharedCore, app: &App, id: u64) {
     if let Some(info) = core.jobs.with(id, true, |s| {
         if s.running {
             if s.info.state == JobState::Downloading {
@@ -246,7 +247,7 @@ pub fn pause(core: &SharedCore, app: &AppHandle, id: u64) {
     }
 }
 
-pub fn resume(core: &SharedCore, app: &AppHandle, id: u64) {
+pub fn resume(core: &SharedCore, app: &App, id: u64) {
     if let Some(info) = core.jobs.with(id, true, |s| {
         if !s.running && matches!(s.info.state, JobState::Paused | JobState::Failed) {
             s.info.state = JobState::Queued;
@@ -260,7 +261,7 @@ pub fn resume(core: &SharedCore, app: &AppHandle, id: u64) {
     pump(core, app);
 }
 
-pub fn cancel(core: &SharedCore, app: &AppHandle, id: u64) {
+pub fn cancel(core: &SharedCore, app: &App, id: u64) {
     let info = core.jobs.with(id, true, |s| {
         if s.running {
             if matches!(s.info.state, JobState::Downloading) {
@@ -281,7 +282,7 @@ pub fn cancel(core: &SharedCore, app: &AppHandle, id: u64) {
 }
 
 /// Queue a CYW self-update whose URL, SHA-256 and signature come from the verified manifest.
-pub fn enqueue_self_update(core: &SharedCore, app: &AppHandle, version: &str, entry: &pikara_secure::manifest::PlatformEntry, kind: crate::install::InstallKind) -> anyhow::Result<u64> {
+pub fn enqueue_self_update(core: &SharedCore, app: &App, version: &str, entry: &pikara_secure::manifest::PlatformEntry, kind: crate::install::InstallKind) -> anyhow::Result<u64> {
     use crate::selfupdate::PRODUCT_ID;
     crate::hub::ensure_not_busy(core, PRODUCT_ID)?;
     pikara_secure::net::check_url(&entry.url, pikara_secure::net::GITHUB_HOSTS)?;
@@ -319,7 +320,7 @@ pub fn enqueue_self_update(core: &SharedCore, app: &AppHandle, version: &str, en
 }
 
 /// Start queued jobs while there is capacity.
-pub fn pump(core: &SharedCore, app: &AppHandle) {
+pub fn pump(core: &SharedCore, app: &App) {
     let max = core.settings.read().unwrap().max_concurrent_downloads.max(1) as usize;
     let mut start = vec![];
     {
@@ -340,12 +341,12 @@ pub fn pump(core: &SharedCore, app: &AppHandle) {
     }
     for (id, ctrl) in start {
         let core = core.clone();
-        let app = app.clone();
-        tauri::async_runtime::spawn(async move { run_job(core, app, id, ctrl).await });
+        let app2 = app.clone();
+        app.spawn(Box::pin(async move { run_job(core, app2, id, ctrl).await }));
     }
 }
 
-async fn run_job(core: SharedCore, app: AppHandle, id: u64, ctrl: Arc<AtomicU8>) {
+async fn run_job(core: SharedCore, app: App, id: u64, ctrl: Arc<AtomicU8>) {
     let outcome = process(&core, &app, id, &ctrl).await;
     let info = core.jobs.with(id, true, |s| {
         s.running = false;
@@ -380,7 +381,7 @@ async fn run_job(core: SharedCore, app: AppHandle, id: u64, ctrl: Arc<AtomicU8>)
     pump(&core, &app);
 }
 
-fn set_state(core: &SharedCore, app: &AppHandle, id: u64, state: JobState) {
+fn set_state(core: &SharedCore, app: &App, id: u64, state: JobState) {
     if let Some(info) = core.jobs.with(id, true, |s| {
         s.info.state = state;
         s.info.speed = 0;
@@ -390,8 +391,12 @@ fn set_state(core: &SharedCore, app: &AppHandle, id: u64, state: JobState) {
     }
 }
 
-async fn process(core: &SharedCore, app: &AppHandle, id: u64, ctrl: &Arc<AtomicU8>) -> Result<(), End> {
+async fn process(core: &SharedCore, app: &App, id: u64, ctrl: &Arc<AtomicU8>) -> Result<(), End> {
     let info = core.jobs.info(id).ok_or(End::Canceled)?;
+    // one download + install per product across all CYW processes (GUI, cyw, SSH sessions)
+    let _product_lock = crate::lock::product(&core.paths, &info.product_id)
+        .map_err(|e| End::Failed(e.to_string()))?
+        .ok_or_else(|| End::Failed(format!("{} 正在由另一個 Create Your World 程序安裝或更新，請稍後再試", info.product_name)))?;
     let file = download(core, app, &info, ctrl).await?;
 
     // ---- verification --------------------------------------------------------------
@@ -423,8 +428,7 @@ async fn process(core: &SharedCore, app: &AppHandle, id: u64, ctrl: &Arc<AtomicU
         .map_err(|e| End::Failed(format!("安裝失敗（原有版本未受影響）：{e:#}")))?;
 
     let keep = core.settings.read().unwrap().keep_previous_versions as usize;
-    {
-        let mut db = core.installed.lock().unwrap();
+    core.modify_installed(|db| {
         let entry = db.apps.entry(info.product_id.clone()).or_insert_with(|| InstalledApp {
             product_id: info.product_id.clone(),
             current: info.tag.clone(),
@@ -444,9 +448,9 @@ async fn process(core: &SharedCore, app: &AppHandle, id: u64, ctrl: &Arc<AtomicU
         });
         entry.current = info.tag.clone();
         prune_versions(entry, keep);
-        let snapshot = db.clone();
-        core.save_installed(&snapshot)?;
-    }
+        Ok(())
+    })
+    .map_err(|e| End::Failed(format!("{e:#}")))?;
     let _ = std::fs::remove_file(&file);
 
     if core.settings.read().unwrap().launch_after_install {
@@ -456,7 +460,7 @@ async fn process(core: &SharedCore, app: &AppHandle, id: u64, ctrl: &Arc<AtomicU
 }
 
 /// SHA-256 + minisign (compiled-in Pikara key) in one streaming pass; neither can be skipped.
-async fn finish_self_update(core: &SharedCore, app: &AppHandle, info: &JobInfo, file: PathBuf) -> Result<(), End> {
+async fn finish_self_update(core: &SharedCore, app: &App, info: &JobInfo, file: PathBuf) -> Result<(), End> {
     let (sha, sig) = match (&info.expected_sha256, &info.signature) {
         (Some(a), Some(b)) => (a.clone(), b.clone()),
         _ => {
@@ -528,7 +532,7 @@ async fn verify_download(core: &SharedCore, info: &JobInfo, product: &crate::cat
     Ok(VerifyReport { sha256: sha, github_digest, checksum_file, signature })
 }
 
-async fn download(core: &SharedCore, app: &AppHandle, info: &JobInfo, ctrl: &Arc<AtomicU8>) -> Result<PathBuf, End> {
+async fn download(core: &SharedCore, app: &App, info: &JobInfo, ctrl: &Arc<AtomicU8>) -> Result<PathBuf, End> {
     let part = part_path(core, info);
     let total = info.total;
     let mut have = tokio::fs::metadata(&part).await.map(|m| m.len()).unwrap_or(0);

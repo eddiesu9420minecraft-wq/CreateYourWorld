@@ -15,7 +15,7 @@ use pikara_secure::net::{self, ClientOptions};
 use serde::Serialize;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use crate::host::{App, HostExt};
 
 pub struct Core {
     pub paths: Paths,
@@ -36,6 +36,11 @@ pub struct Core {
     pub hardware: tokio::sync::OnceCell<HardwareReport>,
     /// Last PATH-sync problem per product (shown on the product; cleared when a sync succeeds).
     pub cli_problems: Mutex<std::collections::BTreeMap<String, String>>,
+    installed_mtime: Mutex<Option<std::time::SystemTime>>,
+}
+
+fn mtime(p: &std::path::Path) -> Option<std::time::SystemTime> {
+    std::fs::metadata(p).and_then(|m| m.modified()).ok()
 }
 
 pub type SharedCore = Arc<Core>;
@@ -60,24 +65,92 @@ impl Core {
             installed: Mutex::new(InstalledDb::default()),
             hardware: tokio::sync::OnceCell::new(),
             cli_problems: Mutex::new(Default::default()),
+            installed_mtime: Mutex::new(None),
             http,
             paths,
         })
     }
 
+    /// Look a product up by its identifier (full product name, case-insensitive; no aliases).
     pub fn product(&self, id: &str) -> anyhow::Result<&Product> {
-        self.catalog.iter().find(|p| p.id == id).ok_or_else(|| anyhow!("未知的產品：{id}"))
+        crate::ids::find(&self.catalog, id).ok_or_else(|| {
+            let s = crate::ids::suggestions(&self.catalog, id);
+            if s.is_empty() { anyhow!("未知的產品：{id}") } else { anyhow!("未知的產品：{id}（是不是：{}？）", s.join("、")) }
+        })
     }
 
-    pub fn save_installed(&self, db: &InstalledDb) -> anyhow::Result<()> {
-        save_json(&self.paths.installed_file(), db)?;
-        // every install / update / switch / rollback / uninstall passes here: keep PATH copies current
-        let problems = crate::cli_path::sync(&self.paths, &self.catalog, db);
+    /// Load installed.json and settings.json from disk (migrating legacy identifiers, persisted under the
+    /// cross-process lock), then sync PATH copies. Call once at startup.
+    pub fn load_state(&self) -> anyhow::Result<()> {
+        let _g = crate::lock::state(&self.paths)?;
+        let mut s: Settings = crate::util::load_json(&self.paths.settings_file());
+        if crate::ids::migrate_settings(&mut s, &self.catalog) {
+            save_json(&self.paths.settings_file(), &s)?;
+        }
+        *self.settings.write().unwrap() = s.clamp();
+        let mut db: InstalledDb = crate::util::load_json(&self.paths.installed_file());
+        if crate::ids::migrate_installed(&mut db, &self.catalog) {
+            save_json(&self.paths.installed_file(), &db)?;
+        }
+        let problems = crate::cli_path::sync(&self.paths, &self.catalog, &db);
+        self.set_cli_problems(problems);
+        *self.installed.lock().unwrap() = db;
+        *self.installed_mtime.lock().unwrap() = mtime(&self.paths.installed_file());
+        Ok(())
+    }
+
+    /// Re-read installed.json if another process (GUI or `cyw`) changed it.
+    pub fn refresh_installed(&self) {
+        let m = mtime(&self.paths.installed_file());
+        let mut last = self.installed_mtime.lock().unwrap();
+        if *last == m {
+            return;
+        }
+        let mut db: InstalledDb = crate::util::load_json(&self.paths.installed_file());
+        crate::ids::migrate_installed(&mut db, &self.catalog);
+        *self.installed.lock().unwrap() = db;
+        *last = m;
+    }
+
+    /// Read-modify-write installed.json under the cross-process lock: always starts from the file on disk, so a
+    /// change made meanwhile by another process is never lost. Also keeps PATH copies in sync.
+    pub fn modify_installed<R>(&self, f: impl FnOnce(&mut InstalledDb) -> anyhow::Result<R>) -> anyhow::Result<R> {
+        let _g = crate::lock::state(&self.paths)?;
+        let mut db: InstalledDb = crate::util::load_json(&self.paths.installed_file());
+        crate::ids::migrate_installed(&mut db, &self.catalog);
+        let r = f(&mut db)?;
+        self.save_installed(&db)?;
+        *self.installed.lock().unwrap() = db;
+        *self.installed_mtime.lock().unwrap() = mtime(&self.paths.installed_file());
+        Ok(r)
+    }
+
+    /// Read-modify-write settings.json under the cross-process lock.
+    pub fn modify_settings<R>(&self, f: impl FnOnce(&mut Settings) -> R) -> anyhow::Result<R> {
+        let _g = crate::lock::state(&self.paths)?;
+        let mut s: Settings = crate::util::load_json(&self.paths.settings_file());
+        crate::ids::migrate_settings(&mut s, &self.catalog);
+        let r = f(&mut s);
+        let s = s.clamp();
+        save_json(&self.paths.settings_file(), &s)?;
+        *self.settings.write().unwrap() = s;
+        Ok(r)
+    }
+
+    fn set_cli_problems(&self, problems: Vec<(String, String)>) {
         let mut m = self.cli_problems.lock().unwrap();
         m.clear();
         for (id, msg) in problems {
             m.insert(id, msg);
         }
+    }
+
+    /// Write installed.json (caller holds the state lock) and sync PATH copies.
+    fn save_installed(&self, db: &InstalledDb) -> anyhow::Result<()> {
+        save_json(&self.paths.installed_file(), db)?;
+        // every install / update / switch / rollback / uninstall passes here: keep PATH copies current
+        let problems = crate::cli_path::sync(&self.paths, &self.catalog, db);
+        self.set_cli_problems(problems);
         Ok(())
     }
 
@@ -91,10 +164,11 @@ impl Core {
     }
 
     pub fn installed_app(&self, id: &str) -> Option<InstalledApp> {
+        self.refresh_installed();
         self.installed.lock().unwrap().apps.get(id).cloned()
     }
 
-    pub fn notify_apps_changed(&self, app: &AppHandle) {
+    pub fn notify_apps_changed(&self, app: &App) {
         let _ = app.emit("apps://changed", ());
     }
 }
@@ -265,48 +339,54 @@ pub fn uninstall(core: &Core, product_id: &str) -> anyhow::Result<()> {
     if is_running(core, product_id) {
         bail!("應用程式正在執行，請先關閉後再解除安裝");
     }
-    let mut db = core.installed.lock().unwrap();
-    let app = db.apps.get(product_id).cloned().ok_or_else(|| anyhow!("尚未安裝"))?;
-    for v in &app.versions {
-        install::uninstall_dir(&v.dir, v.kind)?;
-    }
-    let pdir = install::product_dir(&core.paths.apps, product_id);
-    if pdir.exists() {
-        let _ = std::fs::remove_dir_all(&pdir);
-    }
-    db.apps.remove(product_id);
-    core.save_installed(&db)
+    let id = core.product(product_id)?.id.clone();
+    let legacy = core.product(product_id)?.legacy_ids.clone();
+    core.modify_installed(|db| {
+        let app = db.apps.get(&id).cloned().ok_or_else(|| anyhow!("尚未安裝"))?;
+        // only CYW's own install folders; the app's user data (projects, settings, databases) lives elsewhere
+        for v in &app.versions {
+            install::uninstall_dir(&v.dir, v.kind)?;
+        }
+        for name in std::iter::once(&id).chain(legacy.iter()) {
+            let pdir = install::product_dir(&core.paths.apps, name);
+            if pdir.exists() {
+                let _ = std::fs::remove_dir_all(&pdir);
+            }
+        }
+        db.apps.remove(&id);
+        Ok(())
+    })
 }
 
 /// Make an already-installed version current (no download). Returns false if it isn't kept on disk.
 pub fn switch_to(core: &Core, product_id: &str, tag: &str) -> anyhow::Result<bool> {
-    let mut db = core.installed.lock().unwrap();
-    let Some(app) = db.apps.get_mut(product_id) else { return Ok(false) };
-    if !app.versions.iter().any(|v| v.tag == tag && v.launch.exists()) {
-        return Ok(false);
-    }
-    app.current = tag.to_string();
-    let snapshot = db.clone();
-    core.save_installed(&snapshot)?;
-    Ok(true)
+    let id = core.product(product_id)?.id.clone();
+    core.modify_installed(|db| {
+        let Some(app) = db.apps.get_mut(&id) else { return Ok(false) };
+        if !app.versions.iter().any(|v| v.tag == tag && v.launch.exists()) {
+            return Ok(false);
+        }
+        app.current = tag.to_string();
+        Ok(true)
+    })
 }
 
 /// Switch back to the most recent previous version that is still on disk.
 pub fn rollback(core: &Core, product_id: &str) -> anyhow::Result<String> {
-    let mut db = core.installed.lock().unwrap();
-    let app = db.apps.get_mut(product_id).ok_or_else(|| anyhow!("尚未安裝"))?;
-    let cur = app.current.clone();
-    let target = app
-        .versions
-        .iter()
-        .filter(|v| v.tag != cur && v.launch.exists())
-        .max_by(|a, b| compare_tags(&a.tag, &b.tag))
-        .map(|v| v.tag.clone())
-        .ok_or_else(|| anyhow!("沒有可回復的舊版本"))?;
-    app.current = target.clone();
-    let snapshot = db.clone();
-    core.save_installed(&snapshot)?;
-    Ok(target)
+    let id = core.product(product_id)?.id.clone();
+    core.modify_installed(|db| {
+        let app = db.apps.get_mut(&id).ok_or_else(|| anyhow!("尚未安裝"))?;
+        let cur = app.current.clone();
+        let target = app
+            .versions
+            .iter()
+            .filter(|v| v.tag != cur && v.launch.exists())
+            .max_by(|a, b| compare_tags(&a.tag, &b.tag))
+            .map(|v| v.tag.clone())
+            .ok_or_else(|| anyhow!("沒有可回復的舊版本"))?;
+        app.current = target.clone();
+        Ok(target)
+    })
 }
 
 /// Remove versions beyond the retention setting (never the current one).
@@ -337,7 +417,10 @@ pub fn prune_versions(app: &mut InstalledApp, keep_previous: usize) {
 
 /// At startup: drop records whose files vanished, and clean stale staging dirs.
 pub fn verify_installed(core: &Core) -> usize {
-    let mut db = core.installed.lock().unwrap();
+    core.modify_installed(|db| Ok(verify_installed_db(core, db))).unwrap_or(0)
+}
+
+fn verify_installed_db(core: &Core, db: &mut InstalledDb) -> usize {
     let mut broken = 0;
     for app in db.apps.values_mut() {
         let before = app.versions.len();
@@ -359,10 +442,6 @@ pub fn verify_installed(core: &Core) -> usize {
         }
     }
     db.apps.retain(|_, a| !a.versions.is_empty());
-    if broken > 0 {
-        let snapshot = db.clone();
-        let _ = core.save_installed(&snapshot);
-    }
     broken
 }
 
@@ -377,17 +456,18 @@ pub fn set_on_path(core: &Core, product_id: &str, enabled: bool) -> anyhow::Resu
     if core.product(product_id)?.cli.is_none() {
         bail!("這個產品不是命令列工具");
     }
-    let mut db = core.installed.lock().unwrap();
-    let app = db.apps.get_mut(product_id).ok_or_else(|| anyhow!("尚未安裝"))?;
-    app.on_path = enabled;
-    let snapshot = db.clone();
-    core.save_installed(&snapshot)?;
+    let id = core.product(product_id)?.id.clone();
+    core.modify_installed(|db| {
+        let app = db.apps.get_mut(&id).ok_or_else(|| anyhow!("尚未安裝"))?;
+        app.on_path = enabled;
+        Ok(())
+    })?;
     let m = core.cli_problems.lock().unwrap();
-    Ok(m.get(product_id).or_else(|| m.get("")).cloned())
+    Ok(m.get(&id).or_else(|| m.get("")).cloned())
 }
 
 pub fn is_running(core: &Core, product_id: &str) -> bool {
-    core.installed_app(product_id).is_some() && crate::procs::running_under(&install::product_dir(&core.paths.apps, product_id))
+    core.installed_app(product_id).is_some_and(|a| a.versions.iter().any(|v| crate::procs::running_under(&v.dir)))
 }
 
 pub fn ensure_not_busy(core: &Core, product_id: &str) -> anyhow::Result<()> {

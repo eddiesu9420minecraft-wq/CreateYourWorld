@@ -8,7 +8,11 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Product {
+    /// The full product name, used everywhere as the package identifier (case-insensitive, unique; see `ids`).
     pub id: String,
+    /// Identifiers earlier CYW versions used; only for migrating existing records, never accepted as input.
+    #[serde(default)]
+    pub legacy_ids: Vec<String>,
     pub name: String,
     pub tagline: String,
     pub description: String,
@@ -72,7 +76,8 @@ mod tests {
     #[test]
     fn catalog_parses() {
         let c = super::load();
-        assert!(c.iter().any(|p| p.id == "pikara-science-studio"));
+        assert!(c.iter().any(|p| p.id == "PikaraScienceStudio"));
+        crate::ids::check_unique(&c).unwrap();
         for p in &c {
             for rules in p.assets.values() {
                 for r in rules {

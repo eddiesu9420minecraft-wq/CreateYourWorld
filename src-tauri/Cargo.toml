@@ -33,6 +33,7 @@ minisign-verify = "0.2"
 base64 = "0.22"
 anyhow = "1"
 pikara-secure = { path = "../crates/pikara-secure" }
+cyw-core = { path = "../crates/cyw-core" }
 tauri-plugin-pikara-splash = { path = "../crates/pikara-splash" }
 sysinfo = { version = "0.37", default-features = false, features = ["system"] }
 

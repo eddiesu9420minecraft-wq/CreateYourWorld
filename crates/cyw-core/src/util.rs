@@ -32,7 +32,8 @@ pub fn save_json<T: Serialize>(path: &Path, value: &T) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let tmp = path.with_extension("json.tmp");
+    // unique temp name: two processes never share a temp file
+    let tmp = path.with_extension(format!("json.tmp-{}", std::process::id()));
     let data = serde_json::to_vec_pretty(value).map_err(std::io::Error::other)?;
     std::fs::write(&tmp, data)?;
     std::fs::rename(&tmp, path)
