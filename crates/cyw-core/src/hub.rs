@@ -47,6 +47,18 @@ pub type SharedCore = Arc<Core>;
 
 impl Core {
     pub fn new(paths: Paths) -> anyhow::Result<Self> {
+        Self::with_jobs_file(paths, None)
+    }
+
+    /// Each `cyw` process keeps its jobs to itself (a throwaway file removed on exit), so the GUI's queue is
+    /// never rewritten and a crashed `cyw` can't leave a stale job behind. Installed apps, settings, install
+    /// folders and versions are shared; the cross-process product lock serialises installs.
+    pub fn new_cli(paths: Paths) -> anyhow::Result<Self> {
+        let f = paths.data.join("cli-jobs").join(format!("{}.json", std::process::id()));
+        Self::with_jobs_file(paths, Some(f))
+    }
+
+    fn with_jobs_file(paths: Paths, jobs_file: Option<std::path::PathBuf>) -> anyhow::Result<Self> {
         // Pikara Secure Network: DoH-only resolution, HTTPS-only, allow-listed GitHub hosts.
         let resolver = DohResolver::default();
         let ua = concat!("CreateYourWorld/", env!("CARGO_PKG_VERSION")).to_string();
@@ -58,7 +70,7 @@ impl Core {
             resolver,
             selfupdate: crate::selfupdate::SelfUpdater::new(),
             pending_updates: Mutex::new(std::collections::BTreeSet::new()),
-            jobs: DownloadManager::new(paths.jobs_file()),
+            jobs: DownloadManager::new(jobs_file.unwrap_or_else(|| paths.jobs_file())),
             catalog: crate::catalog::load(),
             platform: Platform::detect(),
             settings: RwLock::new(Settings::default()),
@@ -330,9 +342,7 @@ pub fn launch_current(core: &Core, product_id: &str) -> anyhow::Result<()> {
     if let Some(bin) = crate::cli_path::binary_name(core.product(product_id)?) {
         bail!("這是命令列工具，沒有視窗可以開啟：請在終端機執行 {bin}（可先「加入 PATH」）");
     }
-    let app = core.installed_app(product_id).ok_or_else(|| anyhow!("尚未安裝"))?;
-    let v = app.current_version().ok_or_else(|| anyhow!("安裝資料損毀：找不到目前版本"))?;
-    install::launch(&v.launch)
+    crate::launch::launch(core, product_id, &[], crate::launch::Mode::Detach).map(|_| ())
 }
 
 pub fn uninstall(core: &Core, product_id: &str) -> anyhow::Result<()> {
@@ -475,4 +485,38 @@ pub fn ensure_not_busy(core: &Core, product_id: &str) -> anyhow::Result<()> {
         bail!("此應用程式已有進行中的工作");
     }
     Ok(())
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstallOutcome {
+    pub job_id: Option<u64>,
+    pub switched_to: Option<String>,
+    pub deferred: bool,
+}
+
+/// Install / update / switch a product — the one decision path for the GUI and `cyw`.
+/// * A running app is never touched: with `defer_if_running` the update waits until the app is closed (GUI),
+///   otherwise it's an error (CLI).
+/// * A version still kept on disk (e.g. after a rollback) is switched to instead of downloaded again.
+/// * Otherwise the release is downloaded, verified (SHA-256, GitHub digest, signature) and installed.
+pub async fn request_install(core: &SharedCore, app: &App, product_id: &str, tag: Option<String>, defer_if_running: bool) -> anyhow::Result<InstallOutcome> {
+    let id = core.product(product_id)?.id.clone();
+    if core.installed_app(&id).is_some() && is_running(core, &id) {
+        if !defer_if_running {
+            bail!("{id} 正在執行；請先關閉它再更新（執行中的程式不會被更換）");
+        }
+        core.pending_updates.lock().unwrap().insert(id.clone());
+        core.notify_apps_changed(app);
+        return Ok(InstallOutcome { job_id: None, switched_to: None, deferred: true });
+    }
+    if let Some(t) = &tag {
+        ensure_not_busy(core, &id)?;
+        if switch_to(core, &id, t)? {
+            core.notify_apps_changed(app);
+            return Ok(InstallOutcome { job_id: None, switched_to: Some(t.clone()), deferred: false });
+        }
+    }
+    let job = crate::downloads::enqueue(core, app, &id, tag).await?;
+    Ok(InstallOutcome { job_id: Some(job), switched_to: None, deferred: false })
 }

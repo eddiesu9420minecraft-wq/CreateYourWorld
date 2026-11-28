@@ -409,3 +409,8 @@ fn relaunch(plan: &ApplyPlan) {
         log(plan, "relaunch failed after 5 attempts; the updated app can be started normally");
     }
 }
+
+/// The compiled-in Pikara release key parses (used by `cyw doctor`).
+pub fn pubkey_ok() -> bool {
+    pikara_secure::keys::public_key(keys::PIKARA_RELEASE_PUBKEY).is_ok()
+}

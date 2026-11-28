@@ -41,3 +41,9 @@ fn dunce(p: &Path) -> std::path::PathBuf {
     let s = if cfg!(windows) { s.to_lowercase() } else { s };
     std::path::PathBuf::from(s)
 }
+
+/// (pid, executable) of every process whose executable path is known.
+pub fn processes_with_paths() -> Vec<(u32, std::path::PathBuf)> {
+    let sys = snapshot();
+    sys.processes().iter().filter_map(|(pid, p)| p.exe().map(|e| (pid.as_u32(), dunce(e)))).collect()
+}

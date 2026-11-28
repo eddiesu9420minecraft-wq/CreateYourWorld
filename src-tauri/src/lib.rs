@@ -146,31 +146,9 @@ async fn get_products(core: State<'_, SharedCore>, force: bool) -> Res<Vec<Produ
 }
 
 #[tauri::command]
-async fn install_app(app: AppHandle, core: State<'_, SharedCore>, product_id: String, tag: Option<String>) -> Res<InstallOutcome> {
-    // Never touch a running app: remember the request and update after the user quits it.
-    if core.installed_app(&product_id).is_some() && hub::is_running(&core, &product_id) {
-        core.pending_updates.lock().unwrap().insert(product_id.clone());
-        core.notify_apps_changed(&h(&app));
-        return Ok(InstallOutcome { job_id: None, switched_to: None, deferred: true });
-    }
-    // A version kept on disk (e.g. after a rollback) is switched to instead of downloaded again.
-    if let Some(t) = &tag {
-        hub::ensure_not_busy(&core, &product_id).map_err(err)?;
-        if hub::switch_to(&core, &product_id, t).map_err(err)? {
-            core.notify_apps_changed(&h(&app));
-            return Ok(InstallOutcome { job_id: None, switched_to: Some(t.clone()), deferred: false });
-        }
-    }
-    let id = downloads::enqueue(&core, &h(&app), &product_id, tag).await.map_err(err)?;
-    Ok(InstallOutcome { job_id: Some(id), switched_to: None, deferred: false })
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct InstallOutcome {
-    job_id: Option<u64>,
-    switched_to: Option<String>,
-    deferred: bool,
+async fn install_app(app: AppHandle, core: State<'_, SharedCore>, product_id: String, tag: Option<String>) -> Res<hub::InstallOutcome> {
+    // the GUI defers updates of a running app until the user quits it
+    hub::request_install(&core, &h(&app), &product_id, tag, true).await.map_err(err)
 }
 
 #[tauri::command]

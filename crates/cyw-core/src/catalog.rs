@@ -39,6 +39,9 @@ pub struct Product {
     /// Channel used until the user picks one (e.g. alpha for a product that only has prereleases so far).
     #[serde(default)]
     pub default_channel: Option<Channel>,
+    /// HTTPS URL of the signed plugin index (`plugins.json` + `plugins.json.sig`), if the software has plugins.
+    #[serde(default)]
+    pub plugin_index: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]

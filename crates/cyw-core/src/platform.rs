@@ -178,7 +178,7 @@ mod tests {
         let p = crate::catalog::Product {
             id: "x".into(), legacy_ids: vec![], name: "x".into(), tagline: String::new(), description: String::new(), repo: None, glyph: None,
             assets: Default::default(), ignore_assets: vec![], minisign_public_key: None,
-            category: Default::default(), cli: None, default_channel: None,
+            category: Default::default(), cli: None, default_channel: None, plugin_index: None,
         };
         let r = release(&["App_1.0.0_aarch64.dmg", "App_1.0.0_x64.dmg", "App_1.0.0_x64-setup.exe", "App_1.0.0_amd64.AppImage", "App_x64.app.tar.gz.sig"]);
         assert_eq!(select_asset(&p, &r, &plat("macos", "aarch64")).unwrap().name, "App_1.0.0_aarch64.dmg");
