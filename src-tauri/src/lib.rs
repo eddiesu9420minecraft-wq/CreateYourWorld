@@ -1,5 +1,6 @@
 mod archive;
 mod catalog;
+mod cli_path;
 mod hub;
 mod downloads;
 mod github;
@@ -95,6 +96,15 @@ async fn initialize(app: AppHandle, core: SharedCore) {
 
     splash.begin("installed", "正在檢查已安裝的應用程式…");
     *core.installed.lock().unwrap() = util::load_json(&core.paths.installed_file());
+    // developer tools on PATH: restore the bin copies / PATH entry if something removed them
+    {
+        let db = core.installed.lock().unwrap().clone();
+        let problems = cli_path::sync(&core.paths, &core.catalog, &db);
+        let mut m = core.cli_problems.lock().unwrap();
+        for (id, msg) in problems {
+            m.insert(id, msg);
+        }
+    }
     let c = core.clone();
     let _ = tokio::task::spawn_blocking(move || hub::verify_installed(&c)).await;
     let n = core.installed.lock().unwrap().apps.len();
@@ -195,6 +205,14 @@ fn open_app_folder(app: AppHandle, core: State<'_, SharedCore>, product_id: Stri
     let inst = core.installed_app(&product_id).ok_or("尚未安裝")?;
     let v = inst.current_version().ok_or("找不到目前版本")?;
     app.opener().reveal_item_in_dir(&v.launch).map_err(err)
+}
+
+/// Put a developer tool's binary on the user's PATH, or take it off. Returns a problem message, if any.
+#[tauri::command]
+fn set_on_path(app: AppHandle, core: State<'_, SharedCore>, product_id: String, enabled: bool) -> Res<Option<String>> {
+    let r = hub::set_on_path(&core, &product_id, enabled).map_err(err)?;
+    core.notify_apps_changed(&app);
+    Ok(r)
 }
 
 #[tauri::command]
@@ -411,6 +429,7 @@ pub fn run() {
             uninstall_app,
             rollback_app,
             open_app_folder,
+            set_on_path,
             open_data_dir,
             open_release_page,
             list_jobs,

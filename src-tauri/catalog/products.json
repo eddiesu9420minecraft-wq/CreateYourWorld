@@ -8,23 +8,103 @@
     "glyph": "atom",
     "assets": {
       "windows-x86_64": [
-        { "pattern": "^PikaraScienceStudio\\.exe$", "kind": "portable" },
-        { "pattern": "_x64-setup\\.exe$", "kind": "nsis", "launch": "Pikara Science Studio.exe" }
+        {
+          "pattern": "^PikaraScienceStudio\\.exe$",
+          "kind": "portable"
+        },
+        {
+          "pattern": "_x64-setup\\.exe$",
+          "kind": "nsis",
+          "launch": "Pikara Science Studio.exe"
+        }
       ],
       "macos-aarch64": [
-        { "pattern": "_aarch64\\.app\\.tar\\.gz$", "kind": "app-tar" },
-        { "pattern": "_aarch64\\.dmg$", "kind": "dmg" },
-        { "pattern": "_universal\\.dmg$", "kind": "dmg" }
+        {
+          "pattern": "_aarch64\\.app\\.tar\\.gz$",
+          "kind": "app-tar"
+        },
+        {
+          "pattern": "_aarch64\\.dmg$",
+          "kind": "dmg"
+        },
+        {
+          "pattern": "_universal\\.dmg$",
+          "kind": "dmg"
+        }
       ],
       "macos-x86_64": [
-        { "pattern": "_x64\\.app\\.tar\\.gz$", "kind": "app-tar" },
-        { "pattern": "_x64\\.dmg$", "kind": "dmg" },
-        { "pattern": "_universal\\.dmg$", "kind": "dmg" }
+        {
+          "pattern": "_x64\\.app\\.tar\\.gz$",
+          "kind": "app-tar"
+        },
+        {
+          "pattern": "_x64\\.dmg$",
+          "kind": "dmg"
+        },
+        {
+          "pattern": "_universal\\.dmg$",
+          "kind": "dmg"
+        }
       ],
       "linux-x86_64": [
-        { "pattern": "_amd64\\.AppImage$", "kind": "app-image" }
+        {
+          "pattern": "_amd64\\.AppImage$",
+          "kind": "app-image"
+        }
       ]
     },
-    "ignoreAssets": ["\\.sig$", "SHA256SUMS", "skill\\.zip$"]
+    "ignoreAssets": [
+      "\\.sig$",
+      "SHA256SUMS",
+      "skill\\.zip$"
+    ]
+  },
+  {
+    "id": "runx",
+    "name": "runX",
+    "tagline": "原創程式語言與 AOT 原生編譯器",
+    "description": "runX 是 pikara 從零打造的程式語言。編譯器 runxc 以 Rust 撰寫，透過 Cranelift 把 .rux 直接編譯成不依賴 C 執行期的極小原生執行檔。產生 Windows 執行檔需要 Visual Studio Build Tools（C++）與 Windows SDK 的連結器。",
+    "repo": "eddiesu9420minecraft-wq/runX",
+    "glyph": "runx",
+    "category": "devtool",
+    "cli": {
+      "binary": "runxc"
+    },
+    "defaultChannel": "alpha",
+    "assets": {
+      "windows-x86_64": [
+        {
+          "pattern": "^runxc-.*-x86_64-windows\\.zip$",
+          "kind": "archive",
+          "launch": "runxc.exe"
+        }
+      ],
+      "macos-aarch64": [
+        {
+          "pattern": "^runxc-.*-aarch64-macos\\.zip$",
+          "kind": "archive",
+          "launch": "runxc"
+        }
+      ],
+      "macos-x86_64": [
+        {
+          "pattern": "^runxc-.*-x86_64-macos\\.zip$",
+          "kind": "archive",
+          "launch": "runxc"
+        }
+      ],
+      "linux-x86_64": [
+        {
+          "pattern": "^runxc-.*-x86_64-linux\\.zip$",
+          "kind": "archive",
+          "launch": "runxc"
+        }
+      ]
+    },
+    "ignoreAssets": [
+      "\\.sig$",
+      "SHA256SUMS"
+    ],
+    "minisignPublicKey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEzMjE2NDQ5RUVCOTQ3QTUKUldTbFI3bnVTV1FoRTlzOUNDQUd6VU00SDhRNHJaUmpuNEhEbmJuUGV5dkFjd3hnLzhuYkNtNWUK"
   }
 ]

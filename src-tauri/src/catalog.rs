@@ -1,3 +1,4 @@
+use crate::github::Channel;
 use crate::install::InstallKind;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -25,6 +26,30 @@ pub struct Product {
     /// Minisign / Tauri-updater public key. When set, a matching `.sig` asset is REQUIRED.
     #[serde(default)]
     pub minisign_public_key: Option<String>,
+    /// Where the product is listed (applications or developer tools).
+    #[serde(default)]
+    pub category: Category,
+    /// Command-line tools: the binary CYW can put on the user's PATH. Such products have no window to open.
+    #[serde(default)]
+    pub cli: Option<CliSpec>,
+    /// Channel used until the user picks one (e.g. alpha for a product that only has prereleases so far).
+    #[serde(default)]
+    pub default_channel: Option<Channel>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Category {
+    #[default]
+    App,
+    DevTool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CliSpec {
+    /// Binary name without extension (`runxc`); `.exe` is added on Windows.
+    pub binary: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

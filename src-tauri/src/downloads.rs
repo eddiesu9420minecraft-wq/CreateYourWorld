@@ -429,6 +429,7 @@ async fn process(core: &SharedCore, app: &AppHandle, id: u64, ctrl: &Arc<AtomicU
             product_id: info.product_id.clone(),
             current: info.tag.clone(),
             versions: vec![],
+            on_path: false,
         });
         entry.versions.retain(|v| v.tag != info.tag);
         entry.versions.push(InstalledVersion {

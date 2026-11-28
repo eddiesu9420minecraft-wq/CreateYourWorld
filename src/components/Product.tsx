@@ -16,8 +16,14 @@ export function statusBadge(p: ProductView) {
 
 /** The primary action for a product, reflecting its real state. */
 export function ProductActions({ p, onDetails }: { p: ProductView; onDetails?: () => void }) {
-  const { activeJobFor, run, install } = useStore();
+  const { activeJobFor, run, install, refresh, toast } = useStore();
   const job = activeJobFor(p.id);
+  const togglePath = async (enabled: boolean) => {
+    const problem = await run(() => api.setOnPath(p.id, enabled),
+      enabled ? `已把 ${p.cli} 加入使用者 PATH；請開新的終端機視窗後執行 ${p.cli?.replace(/\.exe$/, "")} --version` : `已從使用者 PATH 移除 ${p.cli}`);
+    if (problem) toast("error", problem);
+    await refresh(false);
+  };
   if (job) {
     return (
       <div className="product-job">
@@ -26,7 +32,22 @@ export function ProductActions({ p, onDetails }: { p: ProductView; onDetails?: (
     );
   }
   const actions = [];
-  if (p.installed) {
+  if (p.installed && p.cli) {
+    // developer tool: no window to open; offer PATH and the install folder instead
+    actions.push(p.onPath ? (
+      <Button key="path" icon="terminal" onClick={() => togglePath(false)}>從 PATH 移除</Button>
+    ) : (
+      <Button key="path" kind="primary" icon="terminal" onClick={() => togglePath(true)}>加入 PATH</Button>
+    ));
+    actions.push(<Button key="dir" kind="ghost" icon="folder" onClick={() => run(() => api.openFolder(p.id))}>開啟資料夾</Button>);
+    if (p.update) {
+      actions.push(
+        <Button key="upd" icon="updates" onClick={() => install(p.id, p.name, p.update!.tag)}>
+          更新至 {p.update.tag}
+        </Button>,
+      );
+    }
+  } else if (p.installed) {
     actions.push(<Button key="open" kind="primary" icon="play" onClick={() => run(() => api.launch(p.id))}>開啟</Button>);
     if (p.update) {
       actions.push(
@@ -62,6 +83,12 @@ export function ProductCard({ p, onOpen }: { p: ProductView; onOpen: () => void 
         </div>
       </div>
       <p className="product-desc">{p.description}</p>
+      {p.cli && p.installed && (
+        <div className="small muted">
+          命令列工具 <span className="mono">{p.cli}</span>{p.onPath ? " · 已在 PATH" : " · 未加入 PATH"}
+          {p.pathProblem && <div className="callout warn small">{p.pathProblem}</div>}
+        </div>
+      )}
       <div className="product-meta small muted">
         {p.latest ? (
           <>最新 {p.latest.tag} · {formatDate(p.latest.publishedAt)}{p.latest.asset && ` · ${formatBytes(p.latest.asset.size)}`}</>
@@ -145,6 +172,14 @@ export function ProductDetail({ p, onClose }: { p: ProductView; onClose: () => v
         </label>
       </div>
       {p.warning && <div className="callout warn small">{p.warning}</div>}
+      {p.cli && (
+        <div className="callout small">
+          <b>命令列工具</b>：安裝後沒有視窗，請在終端機執行 <span className="mono">{p.cli.replace(/\.exe$/, "")}</span>。
+          「加入 PATH」會把目前版本複製到 Create Your World 的 bin 資料夾，並把這個資料夾加入<b>使用者</b> PATH（不需要系統管理員權限）；
+          更新、切換版本或回復時自動跟著更新，解除安裝或移除時一併清除。加入後請開新的終端機視窗。
+          {p.pathProblem && <div className="callout warn small">{p.pathProblem}</div>}
+        </div>
+      )}
       <div className="section-title">發布版本</div>
       {p.releases.length === 0 ? (
         <div className="muted small">{p.repo ? "此頻道沒有發布版本。" : "此產品仍在開發中，尚未建立發布版本。"}</div>

@@ -31,6 +31,10 @@ export interface ProductView {
   installed: InstalledApp | null; update: ReleaseView | null; warning: string | null;
   fetchedAt: number | null; source: string | null; signing: boolean;
   pendingUpdate: boolean; running: boolean;
+  /** "app" (has a window) or "devtool" (developer tools). */
+  category: "app" | "devtool";
+  /** Command-line binary (e.g. runxc.exe) for developer tools. */
+  cli: string | null; onPath: boolean; pathProblem: string | null;
 }
 
 export type JobState = "queued" | "downloading" | "paused" | "verifying" | "installing" | "completed" | "failed" | "canceled";
@@ -83,6 +87,7 @@ export const api = {
   products: (force = false) => invoke<ProductView[]>("get_products", { force }),
   install: (productId: string, tag?: string) => invoke<InstallOutcome>("install_app", { productId, tag: tag ?? null }),
   launch: (productId: string) => invoke<void>("launch_app", { productId }),
+  setOnPath: (productId: string, enabled: boolean) => invoke<string | null>("set_on_path", { productId, enabled }),
   uninstall: (productId: string) => invoke<void>("uninstall_app", { productId }),
   rollback: (productId: string) => invoke<string>("rollback_app", { productId }),
   openFolder: (productId: string) => invoke<void>("open_app_folder", { productId }),

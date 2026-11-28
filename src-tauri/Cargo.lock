@@ -648,6 +648,8 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-pikara-splash",
  "tokio",
+ "windows-sys 0.61.2",
+ "winreg",
  "zip",
 ]
 

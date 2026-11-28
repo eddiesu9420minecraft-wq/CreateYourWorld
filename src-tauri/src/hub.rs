@@ -34,6 +34,8 @@ pub struct Core {
     pub installed: Mutex<InstalledDb>,
     pub jobs: DownloadManager,
     pub hardware: tokio::sync::OnceCell<HardwareReport>,
+    /// Last PATH-sync problem per product (shown on the product; cleared when a sync succeeds).
+    pub cli_problems: Mutex<std::collections::BTreeMap<String, String>>,
 }
 
 pub type SharedCore = Arc<Core>;
@@ -57,6 +59,7 @@ impl Core {
             settings: RwLock::new(Settings::default()),
             installed: Mutex::new(InstalledDb::default()),
             hardware: tokio::sync::OnceCell::new(),
+            cli_problems: Mutex::new(Default::default()),
             http,
             paths,
         })
@@ -68,7 +71,23 @@ impl Core {
 
     pub fn save_installed(&self, db: &InstalledDb) -> anyhow::Result<()> {
         save_json(&self.paths.installed_file(), db)?;
+        // every install / update / switch / rollback / uninstall passes here: keep PATH copies current
+        let problems = crate::cli_path::sync(&self.paths, &self.catalog, db);
+        let mut m = self.cli_problems.lock().unwrap();
+        m.clear();
+        for (id, msg) in problems {
+            m.insert(id, msg);
+        }
         Ok(())
+    }
+
+    /// The release channel for a product: the user's choice, else the catalog default, else the global default.
+    pub fn channel_for(&self, p: &Product) -> Channel {
+        let s = self.settings.read().unwrap();
+        match s.channels.get(&p.id) {
+            Some(c) => *c,
+            None => p.default_channel.unwrap_or(s.default_channel),
+        }
     }
 
     pub fn installed_app(&self, id: &str) -> Option<InstalledApp> {
@@ -116,6 +135,11 @@ pub struct ProductView {
     /// Update deferred until the app is closed.
     pub pending_update: bool,
     pub running: bool,
+    pub category: crate::catalog::Category,
+    /// Command-line binary name (`runxc.exe`) for developer tools; `None` for apps with a window.
+    pub cli: Option<String>,
+    pub on_path: bool,
+    pub path_problem: Option<String>,
 }
 
 fn release_view(p: &Product, r: &GhRelease, plat: &Platform) -> ReleaseView {
@@ -140,8 +164,12 @@ pub async fn product_views(core: &SharedCore, force: bool) -> Vec<ProductView> {
 }
 
 pub async fn product_view(core: &SharedCore, p: &Product, force: bool) -> ProductView {
-    let channel = core.settings.read().unwrap().channel_for(&p.id);
+    let channel = core.channel_for(p);
     let installed = core.installed_app(&p.id);
+    let cli_problem = {
+        let m = core.cli_problems.lock().unwrap();
+        m.get(&p.id).or_else(|| m.get("")).cloned()
+    };
     let mut view = ProductView {
         id: p.id.clone(),
         name: p.name.clone(),
@@ -161,6 +189,10 @@ pub async fn product_view(core: &SharedCore, p: &Product, force: bool) -> Produc
         signing: p.minisign_public_key.is_some(),
         pending_update: core.pending_updates.lock().unwrap().contains(&p.id),
         running: is_running(core, &p.id),
+        category: p.category,
+        cli: crate::cli_path::binary_name(p),
+        on_path: installed_on_path(core, p),
+        path_problem: if p.cli.is_some() { cli_problem } else { None },
     };
     let Some(repo) = &p.repo else { return view };
 
@@ -202,7 +234,7 @@ pub async fn resolve_release(core: &SharedCore, product_id: &str, tag: Option<&s
     let p = core.product(product_id)?.clone();
     let repo = p.repo.clone().ok_or_else(|| anyhow!("{} 仍在開發中，尚無發布版本", p.name))?;
     let rr = core.github.releases(&repo, false).await?;
-    let channel = core.settings.read().unwrap().channel_for(&p.id);
+    let channel = core.channel_for(&p);
     let release = match tag {
         Some(t) => rr.releases.into_iter().find(|r| r.tag_name == t).ok_or_else(|| anyhow!("找不到版本 {t}"))?,
         None => {
@@ -221,6 +253,9 @@ pub async fn resolve_release(core: &SharedCore, product_id: &str, tag: Option<&s
 }
 
 pub fn launch_current(core: &Core, product_id: &str) -> anyhow::Result<()> {
+    if let Some(bin) = crate::cli_path::binary_name(core.product(product_id)?) {
+        bail!("這是命令列工具，沒有視窗可以開啟：請在終端機執行 {bin}（可先「加入 PATH」）");
+    }
     let app = core.installed_app(product_id).ok_or_else(|| anyhow!("尚未安裝"))?;
     let v = app.current_version().ok_or_else(|| anyhow!("安裝資料損毀：找不到目前版本"))?;
     install::launch(&v.launch)
@@ -332,6 +367,25 @@ pub fn verify_installed(core: &Core) -> usize {
 }
 
 /// Is any installed version of this product currently running?
+/// The tool is on PATH: the user enabled it and `<data>/bin` is registered.
+fn installed_on_path(core: &Core, p: &Product) -> bool {
+    p.cli.is_some() && core.installed_app(&p.id).is_some_and(|a| a.on_path) && crate::cli_path::registered(&core.paths)
+}
+
+/// Put a command-line tool on the user's PATH (or take it off). Returns the problem, if any.
+pub fn set_on_path(core: &Core, product_id: &str, enabled: bool) -> anyhow::Result<Option<String>> {
+    if core.product(product_id)?.cli.is_none() {
+        bail!("這個產品不是命令列工具");
+    }
+    let mut db = core.installed.lock().unwrap();
+    let app = db.apps.get_mut(product_id).ok_or_else(|| anyhow!("尚未安裝"))?;
+    app.on_path = enabled;
+    let snapshot = db.clone();
+    core.save_installed(&snapshot)?;
+    let m = core.cli_problems.lock().unwrap();
+    Ok(m.get(product_id).or_else(|| m.get("")).cloned())
+}
+
 pub fn is_running(core: &Core, product_id: &str) -> bool {
     core.installed_app(product_id).is_some() && crate::procs::running_under(&install::product_dir(&core.paths.apps, product_id))
 }

@@ -21,6 +21,7 @@ const PATHS: Record<string, string> = {
   shield: "M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z",
   chip: "M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4",
   retry: "M4 12a8 8 0 0 1 13.66-5.66M20 4v5h-5M20 12a8 8 0 0 1-13.66 5.66M4 20v-5h5",
+  terminal: "M4 5h16v14H4zM7 9l3 3-3 3M12 15h5",
 };
 
 export function Icon({ name, size = 18, className }: { name: keyof typeof PATHS | string; size?: number; className?: string }) {
@@ -37,7 +38,14 @@ export function ProductGlyph({ glyph, size = 56 }: { glyph: string | null; size?
   return (
     <div className="glyph" style={{ width: size, height: size }}>
       <svg viewBox="0 0 48 48" width={size * 0.62} height={size * 0.62} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-        {glyph === "atom" ? (
+        {glyph === "runx" ? (
+          <>
+            {/* runX: a forward chevron (run) beside a solid block (the native binary it produces) */}
+            <path d="M9 13l11 11-11 11" strokeWidth={3.2} strokeLinejoin="round" />
+            <path d="M19 13l11 11-11 11" strokeWidth={3.2} strokeLinejoin="round" opacity={0.45} />
+            <rect x="31" y="17" width="10" height="14" rx="2" fill="currentColor" stroke="none" />
+          </>
+        ) : glyph === "atom" ? (
           <>
             <circle cx="24" cy="24" r="3.4" fill="currentColor" stroke="none" />
             <ellipse cx="24" cy="24" rx="19" ry="7.5" />

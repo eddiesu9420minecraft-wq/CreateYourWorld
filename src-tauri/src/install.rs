@@ -53,6 +53,9 @@ pub struct InstalledApp {
     pub current: String,
     /// Newest first.
     pub versions: Vec<InstalledVersion>,
+    /// Command-line tool: the user asked CYW to keep its binary on PATH (see `cli_path`).
+    #[serde(default)]
+    pub on_path: bool,
 }
 
 impl InstalledApp {

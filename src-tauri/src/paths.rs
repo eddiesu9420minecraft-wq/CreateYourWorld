@@ -36,6 +36,13 @@ impl Paths {
         })
     }
 
+    /// A self-contained layout under `root` (unit tests).
+    #[cfg(test)]
+    pub fn for_test(root: &std::path::Path) -> Self {
+        let data = root.to_path_buf();
+        Self { downloads: data.join("downloads"), apps: data.join("apps"), runtimes: data.join("runtimes"), cache: data.join("cache"), data }
+    }
+
     pub fn ensure(&self) -> std::io::Result<()> {
         for p in [&self.data, &self.cache, &self.downloads, &self.apps, &self.runtimes] {
             std::fs::create_dir_all(p)?;

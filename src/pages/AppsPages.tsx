@@ -76,15 +76,39 @@ export function HomePage({ go, onOpen }: { go: (p: Page) => void; onOpen: (id: s
   );
 }
 
+const CATEGORIES = [
+  { id: "all", label: "全部" },
+  { id: "app", label: "應用程式" },
+  { id: "devtool", label: "開發工具" },
+] as const;
+type CategoryFilter = (typeof CATEGORIES)[number]["id"];
+
 export function AllAppsPage({ query, onOpen }: { query: string; onOpen: (id: string) => void }) {
   const { products } = useStore();
+  const [cat, setCat] = useState<CategoryFilter>("all");
   const list = products.filter((p) => matches(p, query));
+  const sections = (cat === "all" ? (["app", "devtool"] as const) : [cat]).map((c) => ({
+    id: c,
+    title: c === "app" ? "應用程式" : "開發工具",
+    items: list.filter((p) => (p.category ?? "app") === c),
+  })).filter((s) => s.items.length > 0);
+  let n = 0;
   return (
     <div className="page">
       <PageHeader title="所有應用程式" subtitle="版本與下載檔案均即時取自各產品的 GitHub Releases。" />
-      {list.length === 0 ? <Empty icon="search" title="找不到符合的應用程式" /> : (
-        <div className="grid">{list.map((p, i) => <StaggerItem key={p.id} index={i} className="stagger-item"><ProductCard p={p} onOpen={() => onOpen(p.id)} /></StaggerItem>)}</div>
-      )}
+      <div className="row gap-8 category-tabs" role="tablist" aria-label="分類">
+        {CATEGORIES.map((c) => (
+          <button key={c.id} role="tab" aria-selected={cat === c.id} className={`chip category-tab${cat === c.id ? " active" : ""}`} onClick={() => setCat(c.id)}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+      {sections.length === 0 ? <Empty icon="search" title="找不到符合的應用程式" /> : sections.map((s) => (
+        <div key={s.id} data-category={s.id}>
+          {(cat === "all") && <div className="section-title">{s.title}</div>}
+          <div className="grid">{s.items.map((p) => <StaggerItem key={p.id} index={n++} className="stagger-item"><ProductCard p={p} onOpen={() => onOpen(p.id)} /></StaggerItem>)}</div>
+        </div>
+      ))}
     </div>
   );
 }

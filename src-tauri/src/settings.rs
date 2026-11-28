@@ -59,10 +59,6 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn channel_for(&self, product_id: &str) -> Channel {
-        self.channels.get(product_id).copied().unwrap_or(self.default_channel)
-    }
-
     pub fn clamp(mut self) -> Self {
         self.max_concurrent_downloads = self.max_concurrent_downloads.clamp(1, 4);
         self.keep_previous_versions = self.keep_previous_versions.min(3);

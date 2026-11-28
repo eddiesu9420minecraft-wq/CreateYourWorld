@@ -83,6 +83,9 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 select { height: 32px; padding: 0 10px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--border); }
 .switch { width: 18px; height: 18px; accent-color: var(--gold); }
 .chip { padding: 4px 10px; border-radius: 12px; background: var(--panel); border: 1px solid var(--border); color: var(--text-2); }
+.category-tabs { margin: 4px 0 8px; }
+.category-tab { cursor: pointer; font: inherit; }
+.category-tab.active { background: var(--gold-dim); border-color: var(--gold); color: var(--text); }
 .badge { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 8px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; background: var(--panel-2); color: var(--text-2); }
 .badge-gold { background: var(--gold-dim); color: var(--gold-2); }
 .badge-ok { background: rgba(61, 214, 140, 0.12); color: var(--ok); }

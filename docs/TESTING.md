@@ -118,3 +118,24 @@
 - 功能回歸（隔離的資料目錄 `PIKARA_CYW_DATA_DIR`）：安裝 Studio v0.3.1 時 GitHub digest 與 SHA256SUMS 都通過、進度條 `scaleX(0 → 0.85)`、清除快取成功、解除安裝成功。Rust 測試 10/10 通過。
 - 發現：測試程序若在 Claude 容器內執行且沒有設定 `PIKARA_CYW_DATA_DIR`，仍然會讀到（而且可能寫入）使用者真實的 `installed.json`；在容器內清除快取也會遇到「重新分析點」錯誤，這是容器虛擬化造成的，在 D: 槽的隔離目錄中正常。因此測試一律使用隔離的資料目錄。確認過使用者真實的 settings.json 沒有被測試改動。
 - 尚未測試：macOS（Apple Silicon、Intel）實機上的動畫表現；Windows 上可見視窗的主觀流暢度（依使用者要求，本次沒有開啟可見視窗）。
+
+## 2026-11-28 runX 整合（開發工具分類、PATH）
+
+變更：
+- 產品目錄新增 `category`（`app` / `devtool`）、`cli`（命令列工具的執行檔名稱）、`defaultChannel`。
+- 新增 runX（`eddiesu9420minecraft-wq/runX`），預設 Alpha 頻道，**必須**有 Pikara 發布金鑰簽章。
+- 新增「加入 PATH」：
+  - 目前版本的 `runxc.exe` 會複製到 `<資料夾>\bin`，並把這個資料夾加入 `HKCU\Environment\Path`（只寫使用者層級，不需要系統管理員權限），然後廣播 `WM_SETTINGCHANGE`。
+  - 每次 `installed.json` 變更（安裝、更新、切換、回復、解除安裝）以及 CYW 啟動時都會同步；沒有工具需要時，會移除 PATH 項目。
+- 命令列工具不提供「開啟」，按了會說明用法。
+- 「所有應用程式」新增「全部／應用程式／開發工具」分頁。
+
+測試：
+- Rust 單元測試 12/12 通過。`cli_path::sync_cycle_uses_a_test_registry_key` 驗證以下流程，全程只寫入測試用登錄機碼，測試後刪除：加入 PATH → 更新後副本跟著換 → 移除後副本與 PATH 項目都清掉。
+- 隔離的 CYW 在隱藏桌面執行，搭配 `PIKARA_CYW_DATA_DIR` 與 `PIKARA_CYW_ENV_KEY`，結果 **18/18 通過**。報告：`D:\t\cyw-runx\report.json`；runX 倉庫 `docs/test-report-v0.1.0-alpha.md` 有逐項說明。
+  - 第一次執行時，測試腳本在 Claude 容器內讀取 HKCU，看不到 CYW（在容器外）寫入的值，造成誤判 PATH 沒有寫入。改從容器外執行整個測試腳本後才是真實結果，這不是 CYW 的問題。
+- 清理：測試登錄機碼已刪除。使用者真實的 `HKCU\Environment\Path` 中沒有任何 CYW 項目。使用者正在執行的 CYW 與 Studio v0.3.4 沒有被關閉。
+- 未測試：
+  - 使用者真實 PATH 的寫入：程式碼路徑相同，只是換了機碼名稱。
+  - macOS／Linux 的 `~/.local/bin` 符號連結。
+  - 本次沒有發布新版 CYW：使用者目前的 CYW v0.1.2-alpha 不含這些功能。
