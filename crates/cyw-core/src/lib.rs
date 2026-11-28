@@ -5,6 +5,7 @@ pub mod archive;
 pub mod catalog;
 pub mod cli_path;
 pub mod downloads;
+pub mod feedback;
 pub mod github;
 pub mod host;
 pub mod hub;

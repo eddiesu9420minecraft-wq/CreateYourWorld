@@ -1,0 +1,32 @@
+name = "cyw-feedback"
+main = "src/index.ts"
+compatibility_date = "2026-08-15"
+
+# Local only. Nothing here exists on Cloudflare yet.
+[[d1_databases]]
+binding = "DB"
+database_name = "cyw-feedback"
+# Placeholder: the real database is created only after the user approves deployment.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "ATTACHMENTS"
+# Placeholder: the real bucket is created only after the user approves deployment.
+bucket_name = "cyw-feedback-attachments"
+
+[vars]
+# "production" by default. Tests and `npm run dev` override this to "development"
+# (which enables POST /v1/auth/dev). Never deploy with "development".
+ENVIRONMENT = "production"
+# Public client id of the GitHub OAuth App (device flow, no client secret). Empty until the user creates the app.
+GITHUB_OAUTH_CLIENT_ID = ""
+# Login of the GitHub account that owns GITHUB_TOKEN; its webhook comments are ignored (loop prevention).
+GITHUB_BOT_LOGIN = ""
+# Comma separated GitHub logins that are always maintainers.
+MAINTAINER_LOGINS = "eddiesu9420minecraft-wq"
+PRODUCTS = '''{"PikaraScienceStudio":{"name":"Pikara Science Studio","repo":"eddiesu9420minecraft-wq/PikaraScienceStudio"},"runX":{"name":"runX","repo":"eddiesu9420minecraft-wq/runX"},"CreateYourWorld":{"name":"Create Your World","repo":"eddiesu9420minecraft-wq/CreateYourWorld"},"CreateYourWorldStudio":{"name":"Create Your World Studio","repo":"eddiesu9420minecraft-wq/CreateYourWorldStudio"}}'''
+
+# Secrets (documented only, never set here):
+#   GITHUB_TOKEN           - token used to create/comment/close issues in the product repos
+#   GITHUB_WEBHOOK_SECRET  - HMAC secret of the GitHub webhook (X-Hub-Signature-256)

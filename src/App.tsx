@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { ACTIVE_STATES, ARCH_LABEL, OS_LABEL } from "./api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ACTIVE_STATES, ARCH_LABEL, OS_LABEL, fb } from "./api";
 import { PikaraLogo, RevealOverlay } from "@pikara/splash";
 import { MAIN_BACKGROUND, splashBridge, transport } from "./splash";
 import { StoreProvider, useStore } from "./store";
@@ -8,8 +8,9 @@ import { Icon } from "./components/Icon";
 import { ProductDetail } from "./components/Product";
 import { AllAppsPage, HomePage, InstalledPage, UpdatesPage } from "./pages/AppsPages";
 import { DownloadsPage, RuntimePage, SettingsPage } from "./pages/SystemPages";
+import { FeedbackPage } from "./pages/FeedbackPage";
 
-export type Page = "home" | "apps" | "installed" | "updates" | "downloads" | "runtime" | "settings";
+export type Page = "home" | "apps" | "installed" | "updates" | "downloads" | "runtime" | "feedback" | "settings";
 
 const NAV: { id: Page; label: string; icon: string }[] = [
   { id: "home", label: "首頁", icon: "home" },
@@ -18,6 +19,7 @@ const NAV: { id: Page; label: string; icon: string }[] = [
   { id: "updates", label: "更新管理", icon: "updates" },
   { id: "downloads", label: "下載管理", icon: "downloads" },
   { id: "runtime", label: "共用運行環境", icon: "runtime" },
+  { id: "feedback", label: "反饋中心", icon: "feedback" },
 ];
 
 function Shell() {
@@ -30,7 +32,22 @@ function Shell() {
 }
 
 function ShellInner() {
-  const { products, jobs, info, loading, refresh, toasts, dismissToast } = useStore();
+  const { products, jobs, info, loading, refresh, toasts, dismissToast, toast } = useStore();
+  const [unread, setUnread] = useState(0);
+  const seen = useRef(new Set<string>());
+  // background check (Rust, every 10 min while signed in): unread replies / status changes / released fixes
+  useEffect(() => {
+    const un = fb.onNotifications((n) => {
+      setUnread(n.unread);
+      for (const item of n.items) {
+        if (!item.read && !seen.current.has(item.id)) {
+          seen.current.add(item.id);
+          if (item.kind === "released") toast("ok", item.title);
+        }
+      }
+    });
+    return () => { un.then((f) => f()); };
+  }, [toast]);
   const indicator = useMotionOff() ? { duration: 0 } : SPRING;
   const [page, setPage] = useState<Page>("home");
   const [query, setQuery] = useState("");
@@ -41,6 +58,7 @@ function ShellInner() {
     updates: products.filter((p) => p.update).length,
     downloads: jobs.filter((j) => ACTIVE_STATES.includes(j.state)).length,
     installed: products.filter((p) => p.installed).length,
+    feedback: unread,
   };
 
   const go = (p: Page) => setPage(p);
@@ -65,7 +83,7 @@ function ShellInner() {
               {page === n.id && <motion.span layoutId="nav-indicator" className="nav-indicator" transition={indicator} />}
               <Icon name={n.icon} />
               <span>{n.label}</span>
-              {!!counts[n.id] && <span className={`nav-count${n.id === "updates" ? " gold" : ""}`}>{counts[n.id]}</span>}
+              {!!counts[n.id] && <span className={`nav-count${n.id === "updates" || n.id === "feedback" ? " gold" : ""}`}>{counts[n.id]}</span>}
             </button>
           ))}
         </nav>
@@ -100,6 +118,7 @@ function ShellInner() {
             {page === "updates" && <UpdatesPage onOpen={setDetailId} />}
             {page === "downloads" && <DownloadsPage />}
             {page === "runtime" && <RuntimePage />}
+            {page === "feedback" && <FeedbackPage unread={unread} onUnread={setUnread} />}
             {page === "settings" && <SettingsPage />}
           </PageTransition>
         </main>

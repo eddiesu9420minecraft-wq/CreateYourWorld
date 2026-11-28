@@ -1,0 +1,5 @@
+# Copy to .dev.vars for `npm run dev` (local only). Never commit .dev.vars.
+# These are SECRETS in production (set with `wrangler secret put` only after the user approves deployment).
+# For a local run they can stay as harmless dummy values; GitHub calls will then fail cleanly.
+GITHUB_TOKEN=dummy-local-token
+GITHUB_WEBHOOK_SECRET=dummy-local-webhook-secret

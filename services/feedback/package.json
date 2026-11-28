@@ -1,0 +1,20 @@
+{
+  "name": "cyw-feedback",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Create Your World Feedback Center backend (Cloudflare Worker + D1 + R2). Local only until deployment is approved.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "dev": "wrangler d1 migrations apply DB --local && wrangler dev --local --ip 127.0.0.1 --port 8787 --var ENVIRONMENT:development"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.23.0",
+    "@cloudflare/workers-types": "5.20260831.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12",
+    "wrangler": "4.124.0"
+  }
+}
