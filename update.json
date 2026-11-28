@@ -1,26 +1,26 @@
 {
   "product": "create-your-world",
-  "version": "0.1.2-alpha",
-  "notes": "**Create Your World. · Free Forever. — by pikara™**\n\n### 修正\n- 自動更新完成後重新啟動 CYW 更可靠：先確認新版確實已開始執行，失敗時重試，並記錄在 helper.log。\n- 暫存的更新安裝包改用正式檔名（不再帶 `.part`）。\n\n### 已知限制\n- **macOS 版沒有 Apple 簽章，也未經公證**；macOS 的自動更新尚未在 Mac 實機上測試。\n\n所有檔案的校驗值列在 `SHA256SUMS.txt`。安裝包以 Pikara 發布金鑰簽章（minisign，金鑰 ID `13216449EEB947A5`）。\n",
-  "pub_date": "2026-11-27T10:47:04Z",
+  "version": "0.1.3-alpha",
+  "notes": "**Create Your World. · Free Forever. — by pikara™**\n\n### 新增：開發工具與 runX\n- 「所有應用程式」新增「全部／應用程式／開發工具」分頁。\n- 新產品 **runX**（原創程式語言與 AOT 原生編譯器 runxc），列在「開發工具」。\n  - 預設使用 Alpha 頻道。\n  - 安裝前必須通過 GitHub digest、SHA256SUMS 與 Pikara 發布金鑰簽章三項驗證。\n- **加入 PATH**：\n  - 把命令列工具目前版本的執行檔複製到 CYW 的 `bin` 資料夾，並把該資料夾加入**使用者** PATH，不需要系統管理員權限。\n  - 更新、切換版本、回復與解除安裝時都會自動跟著處理。\n  - 加入後請開新的終端機視窗。\n- 命令列工具沒有視窗，所以提供「加入 PATH／從 PATH 移除」與「開啟資料夾」，而不是「開啟」。\n\n### 新增：介面動畫\n- 頁面切換、側邊欄、卡片、對話框、通知與進度條都有動畫。動畫只使用 transform／opacity，閒置時不耗用資源。\n- 「設定 → 介面 → 介面動畫」可以選擇：跟隨系統（預設，遵守系統的「減少動態效果」）、開啟或關閉。\n\n### 驗證\n- CI（Windows、Linux、macOS ARM64／x64）與 DNS 竄改測試都通過。\n- 隔離環境中的 runX 安裝、更新、回復、PATH 與解除安裝測試：18/18 通過。\n- 介面動畫測試：26/26 通過。\n\n### 已知限制\n- **macOS 版沒有 Apple 簽章，也未經公證**；macOS 的自動更新與 PATH 功能（`~/.local/bin`）尚未在 Mac 實機上測試。\n- 加入 PATH 時寫入使用者真實 PATH 的步驟，自動測試是在測試用登錄機碼上驗證的。\n\n所有檔案的校驗值列在 `SHA256SUMS.txt`。安裝包以 Pikara 發布金鑰簽章（minisign，金鑰 ID `13216449EEB947A5`）。\n",
+  "pub_date": "2026-11-28T03:59:38Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.2-alpha/CreateYourWorld_0.1.2-alpha_macos-arm64.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRTJjU0RtWVJZandKWitWZ1NqZTZ1ZFRDWGlLdHhhclN0Z0wxRGYrU3dzWTRKdVhheC9BUmt4SWliMFZJUkJtclY3MWJUTWsvWDl1eW5TODhKVXBLYWdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Nzc1ODk4CWZpbGU6Q3JlYXRlIFlvdXIgV29ybGQuYXBwLnRhci5negl2ZXJzaW9uOjAuMS4yLWFscGhhCklRRERlNi9yWUFYeDZ4UC81dHdXTEl2THpXd0hzMGx6T1cxNzl6Q1B0eUhVMXlNR1p4ekJSZ0xBbXRBNE1velp0M3Vad1JDUHlxS3JQZVBWSVJ2d0FBPT0K",
-      "sha256": "1885da3b1d8918b8ee1247db42081a0444361ebb48d04998aa62bac1d6e125bd",
-      "size": 19101633
+      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.3-alpha/CreateYourWorld_0.1.3-alpha_macos-arm64.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRTJwWWhVK05UL2VSNStCL016bW90NVo3VWpDQm1xRUVKK1gvV3ZVZ05BRTFmekpLbWd1QXA4T2hTR0loMFJOKyt2S2pnNnJEWFRuWFBlVDNXTHdRY1FFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1ODM4MTk4CWZpbGU6Q3JlYXRlIFlvdXIgV29ybGQuYXBwLnRhci5negl2ZXJzaW9uOjAuMS4zLWFscGhhCmVJU1I3Z1FKUlJ0b3ArTEdYWUZJYjk3Nm94eXg0ekZoeWZMSkRRN3JndzNLN3AzUUdPNVdtK29TclZJU3dRSXA0TmJ5L1E5MnM1dUhqZnVhQ1J0L0J3PT0K",
+      "sha256": "d89884183f1b62fbf70387c7d8536a817138fc584be75fb4bdda5b0d47d2eaa8",
+      "size": 19157278
     },
     "darwin-x86_64": {
-      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.2-alpha/CreateYourWorld_0.1.2-alpha_macos-x64.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRS9WSVd0bG1BRlFJNko3RWFuaXh5aE9XeGtuQ1dhcVJsckpHdnNSWE9XRUI1MjZFZ3N5aFJNSEJhVkdHQjE4QXFtRkx5MDBHV1BkbGx1QWRNMm9MSmdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Nzc2MTgxCWZpbGU6Q3JlYXRlIFlvdXIgV29ybGQuYXBwLnRhci5negl2ZXJzaW9uOjAuMS4yLWFscGhhCkdsNCtIT0FHeURGWUNLaFNsejBPbFNzZzVrZENvVjFXbzRxMEk3b2JxNGpSODlQQ29sbnh1WVlVQmVMMTZ3NFRRWlJnemZRMjZGVzE4UFRla3dVSEFnPT0K",
-      "sha256": "b7a91f9ad38ca638b32b03e1b223d9a0657f3f2df326fb6667f42014a1783ac3",
-      "size": 19325184
+      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.3-alpha/CreateYourWorld_0.1.3-alpha_macos-x64.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRThtcTkyb0pYNW9SbjZSd2FjQ01yeUZwMmtsL3BSMmkzN0NSWS9IOUgyMXB3Y3pPZ0RRc0hFazU2OEJndmI2TU9zRkpwTHJSRkFiMnJPNFZKNTVXK3dRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1ODM4MTc0CWZpbGU6Q3JlYXRlIFlvdXIgV29ybGQuYXBwLnRhci5negl2ZXJzaW9uOjAuMS4zLWFscGhhClduc0EzOE5XazcvRjhwRnlQM20vaU9ZYmxWWmpzMXhRdkprMUF4VHhySTRKRFRGZlZKSFJUZXYyeE1KVnNXZjYzV1l0SmszeC9KYzNzQW1LdjkyL0F3PT0K",
+      "sha256": "3ac0b0bdde06cef0500fe2b211011c7fe1b36b0abcb803cc9a82c5f7ef14665c",
+      "size": 19389580
     },
     "windows-x86_64": {
-      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.2-alpha/CreateYourWorld_0.1.2-alpha_windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRStvRCtiYTRxczMyVWd2MmNwUkZtZEw2RFBEQWRETWF5ejRhUHZsbjZLV0tyK3BnTEtTYkJxZW93R0xuckdnSmtPUjVPNW5NeDdXWEYwc3ZQUStEdHdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1Nzc2MDQxCWZpbGU6Q3JlYXRlIFlvdXIgV29ybGRfMC4xLjItYWxwaGFfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMS4yLWFscGhhCk0yVzhwU2M1Yk00NGpyS0RDZHRmb0d2ZnUyaFIvdmQ1ME9rMTFSWGppU0k1M0w0SHQrQlNzeE1lRVRsUENYSHhZcS95eVg0REZCMTl0M011N3FYN0R3PT0K",
-      "sha256": "9d3e5d2b0bde6bd73f44ce1ca56a2c0db495c9341eeacf7a3204918d15bce778",
-      "size": 18270559
+      "url": "https://github.com/eddiesu9420minecraft-wq/CreateYourWorld/releases/download/v0.1.3-alpha/CreateYourWorld_0.1.3-alpha_windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTbFI3bnVTV1FoRTY5dTVRQWxySEo5ZnljM2haTHNNK2E0V2RGdmdrbFQ0QUFjLzNPS2wzaXNndnJTREJrdzl4anJienhnUDNudHhSQVVwOENPZldxRmpIeUVVMU16YkFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1ODM4MjM4CWZpbGU6Q3JlYXRlIFlvdXIgV29ybGRfMC4xLjMtYWxwaGFfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuMS4zLWFscGhhCnQ5Qlo0ZUJ1MUFZdTFQTGlrdTRwQlpEaG81ZHhlOEZ3V21JcTFkKy94L1BTenBIQlJvWEpDTjdLMXloNWdocHJDWmJqMTk1Q0hZUFlsbDZ1ZEJ0N0JRPT0K",
+      "sha256": "883e530dcf830f7ea4a50ba38dad447c79621b410f51155d5535370bda41ecd1",
+      "size": 18331785
     }
   }
 }
